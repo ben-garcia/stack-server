@@ -5,10 +5,10 @@
     - [x] tsconfig.json
   - [x] ESLint
     - [x] airbnb style guide
-  - [ ] Prettier
-    - [ ] should play nice with ESLint
+  - [x] Prettier
+    - [x] should play nice with ESLint
   - [ ] Testing
     - [ ] Jest
     - [ ] Supertest
-  - [ ] Express
-  - [ ] TypeORM
+  - [ ] Husky && lint-staging
+    - [ ] should pass testing and linting
