@@ -7,8 +7,8 @@
     - [x] airbnb style guide
   - [x] Prettier
     - [x] should play nice with ESLint
-  - [ ] Testing
-    - [ ] Jest
-    - [ ] Supertest
+  - [x] Testing
+    - [x] Jest
+    - [x] Supertest
   - [ ] Husky && lint-staging
     - [ ] should pass testing and linting
