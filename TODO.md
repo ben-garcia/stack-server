@@ -10,5 +10,5 @@
   - [x] Testing
     - [x] Jest
     - [x] Supertest
-  - [ ] Husky && lint-staging
-    - [ ] should pass testing and linting
+  - [x] Husky && lint-staging
+    - [x] should pass testing and linting
