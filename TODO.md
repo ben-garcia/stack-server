@@ -1,10 +1,12 @@
 # TODO
 
 - [ ] Setup
-  - [ ] Typescript
-    - [ ] tsconfig.json
+  - [x] Typescript
+    - [x] tsconfig.json
   - [ ] ESLint
     - [ ] airbnb style guide
+  - [ ] Prettier
+    - [ ] should play nice with ESLint
   - [ ] Testing
     - [ ] Jest
     - [ ] Supertest

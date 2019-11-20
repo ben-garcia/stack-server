@@ -5,5 +5,10 @@
   "description": "The back-end code for stack, a Slack clone built with Node/Express/TypeORM",
   "repository": "git@github.com:ben-garcia/stack-server",
   "author": "Ben Garcia",
-  "license": "MIT"
+  "license": "MIT",
+  "scripts": {},
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^3.7.2"
+  }
 }
