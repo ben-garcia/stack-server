@@ -1,0 +1,9 @@
+{
+  "name": "stack-server",
+  "private": true,
+  "version": "1.0.0",
+  "description": "The back-end code for stack, a Slack clone built with Node/Express/TypeORM",
+  "repository": "git@github.com:ben-garcia/stack-server",
+  "author": "Ben Garcia",
+  "license": "MIT"
+}
