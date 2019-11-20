@@ -3,8 +3,8 @@
 - [ ] Setup
   - [x] Typescript
     - [x] tsconfig.json
-  - [ ] ESLint
-    - [ ] airbnb style guide
+  - [x] ESLint
+    - [x] airbnb style guide
   - [ ] Prettier
     - [ ] should play nice with ESLint
   - [ ] Testing
