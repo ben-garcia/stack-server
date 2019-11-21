@@ -1,6 +1,6 @@
 # TODO
 
-- [ ] Development Environment
+- [x] Development Environment
 
   - [x] Typescript
     - [x] tsconfig.json
@@ -16,7 +16,7 @@
 
 - [ ] Setup
 
-  - [ ] Express
+  - [x] Express
   - [ ] TypeORM
 
 - [ ] Models
