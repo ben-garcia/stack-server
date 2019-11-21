@@ -28,6 +28,7 @@
   "plugins": ["@typescript-eslint"],
   "rules": {
     "no-unused-vars": 0,
-    "lines-between-class-members": 0
+    "lines-between-class-members": 0,
+    "class-methods-use-this": 0
   }
 }

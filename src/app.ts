@@ -14,9 +14,11 @@ class App {
 
   // wrapper method for the listen method in express
   public listen(): void {
-    this.app.listen(process.env.PORT, () => {
+    const port = process.env.PORT || 8080;
+
+    this.app.listen(port, () => {
       // eslint-disable-next-line no-console
-      console.log(`Listening on port ${process.env.PORT}`);
+      console.log(`Listening on port ${port}`);
     });
   }
 

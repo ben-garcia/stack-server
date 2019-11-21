@@ -5,7 +5,6 @@ import { Controller } from './types';
 class DummyController implements Controller {
   public router: Router;
   private endpoint: string = '/dummy';
-  private response: string = 'Hello World';
 
   constructor() {
     this.router = express.Router();
@@ -18,10 +17,10 @@ class DummyController implements Controller {
   }
 
   private sendResponse(req: Request, res: Response) {
-    res.send({
+    res.json({
       url: req.url,
       method: req.method,
-      response: this.response,
+      response: 'Hello World',
     });
   }
 }

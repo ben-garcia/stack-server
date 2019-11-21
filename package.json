@@ -7,7 +7,7 @@
   "author": "Ben Garcia",
   "license": "MIT",
   "scripts": {
-    "start": "ts-node index.ts",
+    "start": "nodemon --exec ts-node src/index.ts",
     "test": "jest"
   },
   "dependencies": {
