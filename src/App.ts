@@ -1,5 +1,6 @@
 import express, { Application } from 'express';
 import morgan from 'morgan';
+import helmet from 'helmet';
 
 import { Controller } from './controllers/types';
 
@@ -27,6 +28,7 @@ class App {
   private initializeMiddleware(): void {
     this.app.use(express.json()); // parse application/json in req.body
     this.app.use(morgan('dev')); // logger
+    this.app.use(helmet()); // sets up various HTTP headers for security
   }
 
   // add the routes found in the controllers to the app

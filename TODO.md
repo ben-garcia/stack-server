@@ -23,11 +23,13 @@
       - server restarts automatically after file changes.
     - [x] morgan
       - express logger
-    - [ ] helmet
+    - [x] helmet
       - helps to secure Express apps by setting various http headers.
+    - [ ] node-mocks-http
+      - mock request and response objects for testing.
     - [ ] express-session
-      - authentication using session + cookie
-      - session store using redis/connect-redis for scalability
+      - authentication using session + cookie.
+      - session store using redis/connect-redis for scalability.
 
   - [ ] TypeORM
     - [ ] create User model
