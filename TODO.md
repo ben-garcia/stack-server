@@ -17,16 +17,18 @@
 - ## [ ] Setup
 
   - [x] Express
+
     - [x] ts-node
     - [x] nodemon
       - server restarts automatically after file changes.
-    - [ ] morgan
+    - [x] morgan
       - express logger
     - [ ] helmet
       - helps to secure Express apps by setting various http headers.
     - [ ] express-session
       - authentication using session + cookie
       - session store using redis/connect-redis for scalability
+
   - [ ] TypeORM
     - [ ] create User model
     - [ ] create Workspace model

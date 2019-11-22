@@ -1,4 +1,4 @@
-import App from './app';
+import App from './App';
 import DummyController from './controllers/DummyController';
 
 const app = new App([new DummyController()]);

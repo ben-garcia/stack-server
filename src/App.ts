@@ -1,4 +1,5 @@
 import express, { Application } from 'express';
+import morgan from 'morgan';
 
 import { Controller } from './controllers/types';
 
@@ -25,6 +26,7 @@ class App {
   // add the middlewares for the application.
   private initializeMiddleware(): void {
     this.app.use(express.json()); // parse application/json in req.body
+    this.app.use(morgan('dev')); // logger
   }
 
   // add the routes found in the controllers to the app
