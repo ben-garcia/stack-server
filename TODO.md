@@ -1,6 +1,6 @@
 # TODO
 
-- [x] Development Environment
+- ## [x] Development Environment
 
   - [x] Typescript
     - [x] tsconfig.json
@@ -14,26 +14,33 @@
   - [x] Husky && lint-staging
     - [x] should pass testing and linting
 
-- [ ] Setup
+- ## [ ] Setup
 
   - [x] Express
+    - [x] ts-node
+    - [x] nodemon
+      - server restarts automatically after file changes.
+    - [ ] morgan
+      - express logger
+    - [ ] helmet
+      - helps to secure Express apps by setting various http headers.
+    - [ ] express-session
+      - authentication using session + cookie
+      - session store using redis/connect-redis for scalability
   - [ ] TypeORM
+    - [ ] create User model
+    - [ ] create Workspace model
+    - [ ] create Members model
+    - [ ] create Channel model
+    - [ ] create Message model
 
-- [ ] Models
+- ## [ ] Models
 
-  - [ ] Workspace
-    - belongs to User (as owner)
-    - has many Members (User)
-  - [ ] User
-    - has many Workspaces
-  - [ ] Channel
-    - belongs to a Workspace
-    - has many Messages
-  - [ ] Message
-    - belongs to a Channel
-    - belongs to a User
+  ### Entity Relationship Diagram
 
-- [ ] Controllers
+  ![](erd.png)
+
+* ## [ ] Controllers
 
   - [ ] Authentication
 
@@ -41,6 +48,7 @@
       - endpoint to create a user and store in the db.
     - [ ] /auth/login POST
       - endpoint to search the db and return the user that matches username/password4
+      - [ ] create the session
 
   - [ ] Workspaces
 
@@ -52,21 +60,14 @@
   - [ ] Channels
 
     - [ ] /channels POST
-
       - create a channel
-
     - [ ] /channels PUT
       - edit a channel
 
   - [ ] Messages
-
     - [ ] /messages POST
-
       - create a new message
-
     - [ ] /messages/:id PUT
-
       - update a message
-
     - [ ] /messages/:id DELETE
       - delete a message
