@@ -25,13 +25,14 @@
       - express logger
     - [x] helmet
       - helps to secure Express apps by setting various http headers.
-    - [ ] node-mocks-http
-      - mock request and response objects for testing.
+    - [ ] dotenv
+      - configure environment variables.
     - [ ] express-session
       - authentication using session + cookie.
       - session store using redis/connect-redis for scalability.
 
-  - [ ] TypeORM
+  - [] TypeORM
+    - [x] installation
     - [ ] create User model
     - [ ] create Workspace model
     - [ ] create Members model
