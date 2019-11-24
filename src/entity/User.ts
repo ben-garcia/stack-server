@@ -5,7 +5,11 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  ManyToMany,
+  JoinTable,
 } from 'typeorm';
+
+import Workspace from './Workspace';
 
 @Entity('users')
 class User extends BaseEntity {
@@ -20,6 +24,13 @@ class User extends BaseEntity {
 
   @Column('varchar')
   password: string;
+
+  @ManyToMany(
+    () => Workspace,
+    workspace => workspace.members
+  )
+  @JoinTable()
+  workspaces: Workspace[];
 
   @CreateDateColumn()
   createdAt: Date;
