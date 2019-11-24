@@ -38,7 +38,7 @@ class User extends BaseEntity {
     () => Message,
     message => message.user
   )
-  message: Message[];
+  messages: Message[];
 
   @CreateDateColumn()
   createdAt: Date;

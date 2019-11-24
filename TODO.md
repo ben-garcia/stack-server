@@ -33,11 +33,10 @@
 
   - [] TypeORM
     - [x] installation
-    - [ ] create User model
-    - [ ] create Workspace model
-    - [ ] create Members model
-    - [ ] create Channel model
-    - [ ] create Message model
+    - [x] create User model
+    - [x] create Workspace model
+    - [x] create Channel model
+    - [s] create Message model
 
 - ## [ ] Models
 
