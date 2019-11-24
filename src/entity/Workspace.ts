@@ -8,14 +8,16 @@ import {
   ManyToMany,
   JoinTable,
   ManyToOne,
+  OneToMany,
 } from 'typeorm';
 
 import User from './User';
+import Channel from './Channel';
 
 @Entity('workspaces')
 class Workspace extends BaseEntity {
   @PrimaryGeneratedColumn()
-  id: string;
+  id: number;
 
   @ManyToMany(
     () => User,
@@ -30,6 +32,10 @@ class Workspace extends BaseEntity {
   )
   owner: number;
 
+  @OneToMany(
+    () => Channel,
+    channel => channel.workspaceId
+  )
   @Column({ type: 'varchar', length: 100 })
   name: string;
 
