@@ -6,10 +6,12 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToMany,
+  OneToMany,
   JoinTable,
 } from 'typeorm';
 
 import Workspace from './Workspace';
+import Message from './Message';
 
 @Entity('users')
 class User extends BaseEntity {
@@ -31,6 +33,12 @@ class User extends BaseEntity {
   )
   @JoinTable()
   workspaces: Workspace[];
+
+  @OneToMany(
+    () => Message,
+    message => message.user
+  )
+  message: Message[];
 
   @CreateDateColumn()
   createdAt: Date;

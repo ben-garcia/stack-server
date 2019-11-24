@@ -6,17 +6,25 @@ import {
   UpdateDateColumn,
   Column,
   ManyToOne,
+  OneToMany,
 } from 'typeorm';
 
 import Workspace from './Workspace';
+import Message from './Message';
 
-Entity('channels');
+@Entity('channels')
 class Channel extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
   @ManyToOne(() => Workspace)
-  workspaceId: number;
+  workspace: Workspace;
+
+  @OneToMany(
+    () => Message,
+    message => message.channel
+  )
+  messages: Message[];
 
   @Column('varchar')
   description: string;

@@ -34,7 +34,7 @@ class Workspace extends BaseEntity {
 
   @OneToMany(
     () => Channel,
-    channel => channel.workspaceId
+    channel => channel.workspace
   )
   @Column({ type: 'varchar', length: 100 })
   name: string;
