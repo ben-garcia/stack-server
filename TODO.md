@@ -25,8 +25,6 @@
       - express logger
     - [x] helmet
       - helps to secure Express apps by setting various http headers.
-    - [ ] dotenv
-      - configure environment variables.
     - [ ] express-session
       - authentication using session + cookie.
       - session store using redis/connect-redis for scalability.
