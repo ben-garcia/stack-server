@@ -6,7 +6,6 @@ import {
   UpdateDateColumn,
   Column,
   ManyToMany,
-  JoinTable,
   ManyToOne,
   OneToMany,
 } from 'typeorm';
@@ -23,7 +22,6 @@ class Workspace extends BaseEntity {
     () => User,
     user => user.workspaces
   )
-  @JoinTable()
   members: User[];
 
   @ManyToOne(
@@ -36,6 +34,8 @@ class Workspace extends BaseEntity {
     () => Channel,
     channel => channel.workspace
   )
+  channels: Channel[];
+
   @Column({ type: 'varchar', length: 100 })
   name: string;
 
