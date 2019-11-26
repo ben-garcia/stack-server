@@ -28,7 +28,7 @@ class Workspace extends BaseEntity {
     () => User,
     user => user.workspaces
   )
-  owner: number;
+  owner: User;
 
   @OneToMany(
     () => Channel,

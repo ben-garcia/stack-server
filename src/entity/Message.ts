@@ -16,10 +16,16 @@ class Message extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => User)
+  @ManyToOne(
+    () => User,
+    user => user.messages
+  )
   user: User;
 
-  @ManyToOne(() => Channel)
+  @ManyToOne(
+    () => Channel,
+    channel => channel.messages
+  )
   channel: Channel;
 
   @Column('varchar')

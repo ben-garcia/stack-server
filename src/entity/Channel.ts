@@ -17,7 +17,10 @@ class Channel extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => Workspace)
+  @ManyToOne(
+    () => Workspace,
+    workspace => workspace.channels
+  )
   workspace: Workspace;
 
   @OneToMany(
@@ -32,7 +35,7 @@ class Channel extends BaseEntity {
   @Column({ type: 'varchar', length: 100 })
   name: string;
 
-  @Column('boolean')
+  @Column({ type: 'boolean', default: true })
   public: boolean;
 
   @CreateDateColumn()
