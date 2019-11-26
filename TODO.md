@@ -27,16 +27,16 @@
       - helps to secure Express apps by setting various http headers.
     - [ ] express-session
       - authentication using session + cookie.
-      - session store using redis/connect-redis for scalability.
+      - session store using redis/connect-redis for scalability(learning).
 
-  - [] TypeORM
+  - [x] TypeORM
     - [x] installation
     - [x] create User model
     - [x] create Workspace model
     - [x] create Channel model
     - [s] create Message model
 
-- ## [ ] Models
+- ## [x] Models
 
   ### Entity Relationship Diagram
 
