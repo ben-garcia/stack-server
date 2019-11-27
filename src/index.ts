@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import { createConnection } from 'typeorm';
 
 import App from './App';
-import DummyController from './controllers/DummyController';
+import AuthenticationController from './controllers/AuthenticationController';
 
 (async () => {
   try {
@@ -15,7 +15,7 @@ import DummyController from './controllers/DummyController';
   // eslint-disable-next-line no-console
   console.log('Connection to the db established.');
 
-  const app = new App([new DummyController()]);
+  const app = new App([new AuthenticationController()]);
 
   app.listen();
 })();

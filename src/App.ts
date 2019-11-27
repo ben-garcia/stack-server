@@ -34,7 +34,7 @@ class App {
   // add the routes found in the controllers to the app
   private initializeControllers(controllers: Controller[]): void {
     controllers.forEach(controller => {
-      this.app.use('/', controller.router);
+      this.app.use(controller.path, controller.router);
     });
   }
 }
