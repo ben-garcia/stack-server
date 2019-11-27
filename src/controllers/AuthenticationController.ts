@@ -31,11 +31,9 @@ class AuthenticationController implements Controller {
         })
         .save();
 
-      res.status(201);
-      res.json({ user });
+      res.status(201).json({ user });
     } catch (e) {
-      res.status(400);
-      res.json({ message: e.message });
+      res.status(400).json({ message: e.message });
     }
   };
 }

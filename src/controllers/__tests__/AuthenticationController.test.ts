@@ -24,7 +24,7 @@ describe('AuthenticationController', () => {
       },
     };
     const mockResponse = {
-      status: jest.fn(),
+      status: jest.fn().mockReturnThis(),
       json: jest.fn(),
     };
 
