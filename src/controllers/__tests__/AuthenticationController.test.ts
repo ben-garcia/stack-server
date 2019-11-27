@@ -59,7 +59,7 @@ describe('AuthenticationController', () => {
         const newAuthenticationController = new AuthenticationController();
 
         (newAuthenticationController.userRepository as any) = {
-          create: jest.fn(),
+          create: jest.fn().mockReturnThis(),
           save: jest.fn(),
         };
 
@@ -71,9 +71,9 @@ describe('AuthenticationController', () => {
         expect(
           newAuthenticationController.userRepository.create
         ).toHaveBeenCalled();
-        // expect(
-        //   newAuthenticationController.userRepository.save
-        // ).toHaveBeenCalled();
+        expect(
+          newAuthenticationController.userRepository.save
+        ).toHaveBeenCalled();
       });
 
       it('should call res.status and res.json methods', () => {
