@@ -25,9 +25,12 @@
       - express logger
     - [x] helmet
       - helps to secure Express apps by setting various http headers.
+    - [ ] bcrypt
+      - hash the password before inserting into the db.
     - [ ] express-session
       - authentication using session + cookie.
-      - session store using redis/connect-redis for scalability(learning).
+    - [ ] redis/connect-redis
+      - session store for scalability(learning).
 
   - [x] TypeORM
     - [x] installation
@@ -48,9 +51,22 @@
 
     - [ ] /auth/register POST
       - endpoint to create a user and store in the db.
+      - [ ] verify the user has sent the required object
+        - must have password
+        - must have username
+        - must have email
+      - [ ] check there is no user in the db with email/username passed in.
+      - [ ] hash password before inserting it to the db
+      - [ ] endpoint should return
+      - true if the user was successfully added
+      - false if there was a problem
     - [ ] /auth/login POST
-      - endpoint to search the db and return the user that matches username/password4
-      - [ ] create the session
+      - endpoint to search the db and return the user that matches email/password
+      - [ ] check whether user exists in the db
+        - [ ] user exits in the db
+          - add session id in a cookie to the client
+        - [ ] user doesn't exitst
+          - send error message
 
   - [ ] Workspaces
 
