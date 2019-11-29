@@ -8,7 +8,9 @@ import {
   ManyToMany,
   OneToMany,
   JoinTable,
+  BeforeInsert,
 } from 'typeorm';
+import bcrypt from 'bcrypt';
 
 import Workspace from './Workspace';
 import Message from './Message';
@@ -45,6 +47,17 @@ class User extends BaseEntity {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @BeforeInsert()
+  hashPassword = async () => {
+    try {
+      const hashedPassword = await bcrypt.hash(this.password, 12);
+      this.password = hashedPassword;
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.log('failed to hash password before inserting into db: ', e);
+    }
+  };
 }
 
 export default User;

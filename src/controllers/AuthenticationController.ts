@@ -33,7 +33,7 @@ class AuthenticationController implements Controller {
 
       res.status(201).json({ user });
     } catch (e) {
-      res.status(400).json({ message: e.message });
+      res.status(401).json({ message: e.message });
     }
   };
 }

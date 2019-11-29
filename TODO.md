@@ -25,7 +25,7 @@
       - express logger
     - [x] helmet
       - helps to secure Express apps by setting various http headers.
-    - [ ] bcrypt
+    - [x] bcrypt
       - hash the password before inserting into the db.
     - [ ] express-session
       - authentication using session + cookie.
@@ -56,10 +56,10 @@
         - must have username
         - must have email
       - [ ] check there is no user in the db with email/username passed in.
-      - [ ] hash password before inserting it to the db
+      - [x] hash password before inserting it to the db
       - [ ] endpoint should return
-      - true if the user was successfully added
-      - false if there was a problem
+        - true if the user was successfully added
+        - false if there was a problem
     - [ ] /auth/login POST
       - endpoint to search the db and return the user that matches email/password
       - [ ] check whether user exists in the db
