@@ -27,6 +27,8 @@
       - helps to secure Express apps by setting various http headers.
     - [x] bcrypt
       - hash the password before inserting into the db.
+    - [ ] @hapi/joi
+      - entity validation
     - [ ] express-session
       - authentication using session + cookie.
     - [ ] redis/connect-redis

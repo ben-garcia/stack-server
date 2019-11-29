@@ -7,7 +7,7 @@ describe('User entity', () => {
 
   it('should hash the password by calling hashPassword method', async () => {
     const user: User = new User();
-    const initialPassword = 'testing';
+    const initialPassword: string = 'testing';
 
     user.email = 'test@test.com';
     user.username = 'testing';
