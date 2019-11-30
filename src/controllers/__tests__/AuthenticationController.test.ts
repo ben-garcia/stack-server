@@ -28,33 +28,37 @@ describe('AuthenticationController', () => {
       json: jest.fn(),
     };
 
-    it('should have path equal to /auth', () => {
-      expect(authenticationController.path).toBe('/auth');
-    });
+    describe('verify member variables', () => {
+      it('should have path equal to /auth', () => {
+        expect(authenticationController.path).toBe('/auth');
+      });
 
-    it('should have a router', () => {
-      expect(authenticationController.router).toBeDefined();
-    });
+      it('should have a router', () => {
+        expect(authenticationController.router).toBeDefined();
+      });
 
-    it('should have a userRepository', () => {
-      expect(authenticationController.userRepository).toBeDefined();
-    });
-
-    it('should make sure registerUser method is called properlly', async () => {
-      authenticationController.registerUser = jest.fn();
-      await authenticationController.registerUser(
-        mockRequest as any,
-        mockResponse as any
-      );
-
-      expect(authenticationController.registerUser).toHaveBeenCalled();
-      expect(authenticationController.registerUser).toHaveBeenCalledWith(
-        mockRequest,
-        mockResponse
-      );
+      it('should have a userRepository', () => {
+        expect(authenticationController.userRepository).toBeDefined();
+      });
     });
 
     describe('When attempting to register a new user', () => {
+      it('should ', () => {});
+
+      it('should make sure registerUser method is called properlly', async () => {
+        authenticationController.registerUser = jest.fn();
+        await authenticationController.registerUser(
+          mockRequest as any,
+          mockResponse as any
+        );
+
+        expect(authenticationController.registerUser).toHaveBeenCalled();
+        expect(authenticationController.registerUser).toHaveBeenCalledWith(
+          mockRequest,
+          mockResponse
+        );
+      });
+
       it('should call userRepository.create and userRepository.save methods', async () => {
         const newAuthenticationController = new AuthenticationController();
 
