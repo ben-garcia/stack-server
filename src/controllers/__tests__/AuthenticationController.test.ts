@@ -1,4 +1,5 @@
 import * as typeorm from 'typeorm';
+import Joi from '@hapi/joi';
 
 import AuthenticationController from '../AuthenticationController';
 
@@ -43,7 +44,17 @@ describe('AuthenticationController', () => {
     });
 
     describe('When attempting to register a new user', () => {
-      it('should ', () => {});
+      it('should call validateAsync with req.body', async () => {
+        const schema = jest.spyOn(Joi, 'object');
+
+        await authenticationController.registerUser(
+          mockRequest as any,
+          mockResponse as any
+        );
+
+        expect(schema).toHaveBeenCalled();
+        // expect(schema).toHaveBeenCalledWith(mockRequest.body);
+      });
 
       it('should make sure registerUser method is called properlly', async () => {
         authenticationController.registerUser = jest.fn();
