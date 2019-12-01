@@ -15,7 +15,6 @@ describe('AuthenticationController', () => {
     );
 
     const authenticationController = new AuthenticationController();
-
     const mockRequest = {
       body: {
         email: 'test@email.com',

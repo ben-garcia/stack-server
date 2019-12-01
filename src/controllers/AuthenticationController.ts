@@ -41,7 +41,7 @@ class AuthenticationController implements Controller {
   public registerUser = async (req: Request, res: Response) => {
     try {
       const value = await this.schema.validateAsync(req.body);
-      const user: User = await this.userRepository
+      await this.userRepository
         .create({
           email: value.email,
           password: value.password,
@@ -49,7 +49,7 @@ class AuthenticationController implements Controller {
         })
         .save();
 
-      res.status(201).json({ user });
+      res.status(201).json({ status: 'success' });
     } catch (e) {
       res.status(400).json({ error: e.message });
     }
