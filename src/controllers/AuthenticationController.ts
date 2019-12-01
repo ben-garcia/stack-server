@@ -1,6 +1,6 @@
 import express, { Request, Response, Router } from 'express';
 import { getRepository, Repository } from 'typeorm';
-import Joi from '@hapi/joi';
+import Joi, { ObjectSchema } from '@hapi/joi';
 
 import User from '../entity/User';
 import { Controller } from './types';
@@ -9,21 +9,13 @@ class AuthenticationController implements Controller {
   public path: string;
   public router: Router;
   public userRepository: Repository<User>;
+  public schema: ObjectSchema;
 
   constructor() {
     this.path = '/auth';
     this.router = express.Router();
     this.userRepository = getRepository(User);
-
-    this.initializeRoutes();
-  }
-
-  private initializeRoutes(): void {
-    this.router.post('/register', this.registerUser);
-  }
-
-  public registerUser = async (req: Request, res: Response) => {
-    const schema = Joi.object({
+    this.schema = Joi.object({
       username: Joi.string()
         .trim()
         .alphanum()
@@ -39,8 +31,16 @@ class AuthenticationController implements Controller {
         }),
     });
 
+    this.initializeRoutes();
+  }
+
+  private initializeRoutes(): void {
+    this.router.post('/register', this.registerUser);
+  }
+
+  public registerUser = async (req: Request, res: Response) => {
     try {
-      const value = await schema.validateAsync(req.body);
+      const value = await this.schema.validateAsync(req.body);
       const user: User = await this.userRepository
         .create({
           email: value.email,

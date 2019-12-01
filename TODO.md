@@ -53,7 +53,7 @@
 
     - [ ] /auth/register POST
       - endpoint to create a user and store in the db.
-      - [ ] verify the user has sent the required object
+      - [x] verify the user has sent the required object
         - must have password
         - must have username
         - must have email
