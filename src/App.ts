@@ -1,6 +1,7 @@
 import express, { Application } from 'express';
 import morgan from 'morgan';
 import helmet from 'helmet';
+import cors from 'cors';
 
 import { Controller } from './controllers/types';
 
@@ -29,6 +30,7 @@ class App {
     this.app.use(express.json()); // parse application/json in req.body
     this.app.use(morgan('dev')); // logger
     this.app.use(helmet()); // sets up various HTTP headers for security
+    this.app.use(cors()); // enable cors
   }
 
   // add the routes found in the controllers to the app
