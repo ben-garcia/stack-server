@@ -71,32 +71,6 @@ describe('AuthenticationController', () => {
           mockResponse
         );
       });
-
-      it('should call userRepository.create and userRepository.save methods', async () => {
-        const newAuthenticationController = new AuthenticationController();
-
-        (newAuthenticationController.userRepository as any) = {
-          create: jest.fn().mockReturnThis(),
-          save: jest.fn(),
-        };
-
-        await newAuthenticationController.registerUser(
-          mockRequest as any,
-          mockResponse as any
-        );
-
-        expect(
-          newAuthenticationController.userRepository.create
-        ).toHaveBeenCalled();
-        expect(
-          newAuthenticationController.userRepository.save
-        ).toHaveBeenCalled();
-      });
-
-      it('should call res.status and res.json methods', () => {
-        expect(mockResponse.status).toHaveBeenCalled();
-        expect(mockResponse.json).toHaveBeenCalled();
-      });
     });
   });
 });

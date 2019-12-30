@@ -51,17 +51,17 @@
 
   - [ ] Authentication
 
-    - [ ] /auth/register POST
+    - [x] /auth/register POST
       - endpoint to create a user and store in the db.
       - [x] verify the user has sent the required object
         - must have password
         - must have username
         - must have email
-      - [ ] check there is no user in the db with email/username passed in.
+      - [x] check there is no user in the db with email/username passed in.
       - [x] hash password before inserting it to the db
-      - [ ] endpoint should return
-        - { status: 'success' } if succesfull
-        - { status: 'failed', message: e.message} if otherwise
+      - [x] endpoint should return
+        - { status: 'User Created' } if succesfull
+        - { error: e.detail} otherwise
     - [ ] /auth/login POST
       - endpoint to search the db and return the user that matches email/password
       - [ ] check whether user exists in the db

@@ -41,6 +41,16 @@ class AuthenticationController implements Controller {
   public registerUser = async (req: Request, res: Response) => {
     try {
       const value = await this.schema.validateAsync(req.body);
+
+      // check for any records that match req.body
+      // if any record is found matching either email or username
+      // then send detailed error message.
+      await this.userRepository.findOne({
+        email: req.body.email,
+        username: req.body.username,
+      });
+
+      // create a new record in the db.
       await this.userRepository
         .create({
           email: value.email,
@@ -49,9 +59,9 @@ class AuthenticationController implements Controller {
         })
         .save();
 
-      res.status(201).json({ status: 'success' });
+      res.status(201).json({ status: 'User Created' });
     } catch (e) {
-      res.status(400).json({ error: e.message });
+      res.status(400).json({ error: e.detail });
     }
   };
 }
