@@ -61,7 +61,7 @@ class AuthenticationController implements Controller {
 
       res.status(201).json({ status: 'User Created' });
     } catch (e) {
-      res.status(400).json({ error: e.detail });
+      res.status(409).json({ error: e.detail });
     }
   };
 }
