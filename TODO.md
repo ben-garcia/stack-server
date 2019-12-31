@@ -29,9 +29,9 @@
       - hash the password before inserting into the db.
     - [x] @hapi/joi
       - entity validation
-    - [ ] express-session
+    - [x] express-session
       - authentication using session + cookie.
-    - [ ] redis/connect-redis
+    - [x] redis/connect-redis
       - session store for scalability(learning).
 
   - [x] TypeORM
@@ -65,9 +65,9 @@
     - [ ] /auth/login POST
       - endpoint to search the db and return the user that matches email/password
       - [ ] check whether user exists in the db
-        - [ ] user exits in the db
-          - add session id in a cookie to the client
-        - [ ] user doesn't exitst
+        - [x] user exits in the db
+          - [ ] add session id in a cookie to the client
+        - [x] user doesn't exist
           - send error message
 
   - [ ] Workspaces
