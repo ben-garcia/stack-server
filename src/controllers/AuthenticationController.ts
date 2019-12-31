@@ -82,6 +82,10 @@ class AuthenticationController implements Controller {
           throw new Error('passwords dont match');
         }
       }
+
+      // add the user id to the session
+      req.session!.userId = user.id;
+
       res.status(200).json({ user });
     } catch (e) {
       // eslint-disable-next-line
