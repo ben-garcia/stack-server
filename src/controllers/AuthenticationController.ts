@@ -86,6 +86,9 @@ class AuthenticationController implements Controller {
       // add the user id to the session
       req.session!.userId = user.id;
 
+      // don't send the user's password
+      delete user.password;
+
       res.status(200).json({ user });
     } catch (e) {
       // eslint-disable-next-line
