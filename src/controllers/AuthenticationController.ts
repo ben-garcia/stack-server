@@ -71,7 +71,6 @@ class AuthenticationController implements Controller {
     try {
       const user = await this.userRepository.findOne({
         where: { email: req.body.email },
-        relations: ['workspaces'],
       });
 
       // if a user is found then compare password
