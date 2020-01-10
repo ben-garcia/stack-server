@@ -10,8 +10,7 @@ import {
   OneToMany,
 } from 'typeorm';
 
-import User from './User';
-import Channel from './Channel';
+import { Channel, User } from '.';
 
 @Entity('workspaces')
 class Workspace extends BaseEntity {
@@ -26,7 +25,7 @@ class Workspace extends BaseEntity {
 
   @ManyToOne(
     () => User,
-    user => user.workspaces
+    user => user.id
   )
   owner: User;
 

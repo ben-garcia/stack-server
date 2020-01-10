@@ -12,8 +12,7 @@ import {
 } from 'typeorm';
 import bcrypt from 'bcrypt';
 
-import Workspace from './Workspace';
-import Message from './Message';
+import { Workspace, Message } from '.';
 
 @Entity('users')
 class User extends BaseEntity {

@@ -3,7 +3,7 @@ import { getRepository, Repository } from 'typeorm';
 import Joi, { ObjectSchema } from '@hapi/joi';
 import bcrypt from 'bcrypt';
 
-import User from '../entity/User';
+import { User } from '../entity';
 import { Controller } from './types';
 
 class AuthenticationController implements Controller {
@@ -42,7 +42,7 @@ class AuthenticationController implements Controller {
 
   public registerUser = async (req: Request, res: Response) => {
     try {
-      const value = await this.schema.validateAsync(req.body);
+      const validatedUser = await this.schema.validateAsync(req.body);
 
       // check for any records that match req.body
       // if any record is found matching either email or username
@@ -55,9 +55,9 @@ class AuthenticationController implements Controller {
       // create a new record in the db.
       await this.userRepository
         .create({
-          email: value.email,
-          password: value.password,
-          username: value.username,
+          email: validatedUser.email,
+          password: validatedUser.password,
+          username: validatedUser.username,
         })
         .save();
 
@@ -70,7 +70,8 @@ class AuthenticationController implements Controller {
   public loginUser = async (req: Request, res: Response) => {
     try {
       const user = await this.userRepository.findOne({
-        email: req.body.email,
+        where: { email: req.body.email },
+        relations: ['workspaces'],
       });
 
       // if a user is found then compare password
