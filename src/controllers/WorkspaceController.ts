@@ -54,14 +54,17 @@ class WorkspaceController implements Controller {
       });
 
       // if no errors then add the record
-      await this.workspaceRepository
+      const workspace = await this.workspaceRepository
         .create({
           name: validatedWorkspace.name,
           owner: user,
         })
         .save();
 
-      res.status(201).json({ message: 'Workspace Created' });
+      // remove the user before sending it
+      delete workspace.owner;
+
+      res.status(201).json({ message: 'Workspace Created', workspace });
     } catch (e) {
       res.status(409).json({ error: e });
     }
