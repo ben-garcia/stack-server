@@ -3,8 +3,8 @@ import { getRepository, Repository } from 'typeorm';
 import Joi, { ObjectSchema } from '@hapi/joi';
 import bcrypt from 'bcrypt';
 
-import { User } from '../entity';
-import { Controller } from './types';
+import { User } from '../../entity';
+import { Controller } from '../types';
 
 class AuthenticationController implements Controller {
   public path: string;

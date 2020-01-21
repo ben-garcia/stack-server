@@ -1,6 +1,6 @@
 import * as typeorm from 'typeorm';
 
-import AuthenticationController from '../AuthenticationController';
+import { AuthenticationController } from '..';
 
 describe('AuthenticationController', () => {
   // create the mock for 'getRepository' that gets called

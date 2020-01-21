@@ -2,8 +2,8 @@ import express, { Request, Response, Router } from 'express';
 import { getRepository, Repository } from 'typeorm';
 import Joi, { ObjectSchema } from '@hapi/joi';
 
-import { User, Workspace } from '../entity';
-import { Controller } from './types';
+import { User, Workspace } from '../../entity';
+import { Controller } from '../types';
 
 class WorkspaceController implements Controller {
   public path: string;
