@@ -2,7 +2,11 @@ import 'reflect-metadata';
 import { createConnection } from 'typeorm';
 
 import App from './App';
-import { AuthenticationController, WorkspaceController } from './controllers';
+import {
+  AuthenticationController,
+  ChannelController,
+  WorkspaceController,
+} from './controllers';
 
 (async () => {
   try {
@@ -17,6 +21,7 @@ import { AuthenticationController, WorkspaceController } from './controllers';
 
   const app = new App([
     new AuthenticationController(),
+    new ChannelController(),
     new WorkspaceController(),
   ]);
 
