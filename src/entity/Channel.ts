@@ -36,7 +36,7 @@ class Channel extends BaseEntity {
   name: string;
 
   @Column({ type: 'boolean', default: true })
-  public: boolean;
+  private: boolean;
 
   @CreateDateColumn()
   createdAt: Date;

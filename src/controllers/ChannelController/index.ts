@@ -62,7 +62,7 @@ class ChannelController implements Controller {
         .create({
           name: validatedChannel.name,
           description: validatedChannel.description,
-          public: validatedChannel.public,
+          private: validatedChannel.public,
           workspace,
         })
         .save();
