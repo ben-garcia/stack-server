@@ -22,7 +22,7 @@ class ChannelController implements Controller {
       description: Joi.string()
         .trim()
         .required(),
-      public: Joi.boolean().required(),
+      private: Joi.boolean().required(),
       workspace: Joi.number().required(),
     });
 
@@ -62,7 +62,7 @@ class ChannelController implements Controller {
         .create({
           name: validatedChannel.name,
           description: validatedChannel.description,
-          private: validatedChannel.public,
+          private: validatedChannel.private,
           workspace,
         })
         .save();
