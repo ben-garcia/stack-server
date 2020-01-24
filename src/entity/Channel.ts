@@ -38,6 +38,9 @@ class Channel extends BaseEntity {
   @Column({ type: 'boolean', default: true })
   private: boolean;
 
+  @Column({ type: 'varchar', length: 100, default: null })
+  topic: string;
+
   @CreateDateColumn()
   createdAt: Date;
 
