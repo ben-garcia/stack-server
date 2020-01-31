@@ -88,6 +88,8 @@ class WorkspaceController implements Controller {
         user = await getRepository(User).findOne({ where: { username: u } });
 
         if (user) {
+          // don't send user's password to the client
+          delete user.password;
           members.push(user);
         } else {
           invalidUsernames.push(u as string);
