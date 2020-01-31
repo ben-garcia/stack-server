@@ -28,6 +28,7 @@ class WorkspaceController implements Controller {
   private initializeRoutes(): void {
     this.router.get('/', this.getUsersWorkspaces);
     this.router.post('/', this.createWorkspace);
+    this.router.put('/:workspaceId', this.updateWorkspace);
   }
 
   public getUsersWorkspaces = async (req: Request, res: Response) => {
@@ -67,6 +68,52 @@ class WorkspaceController implements Controller {
       res.status(201).json({ message: 'Workspace Created', workspace });
     } catch (e) {
       res.status(409).json({ error: e });
+    }
+  };
+
+  public updateWorkspace = async (req: Request, res: Response) => {
+    try {
+      // const { workspaceId } = req.params;
+      const members: User[] = [];
+      const invalidUsernames: string[] = [];
+      // get the correct workspace from db
+      // const workspace = await this.workspaceRepository.findOne({
+      //   id: Number(workspaceId),
+      // });
+
+      const usernames = Object.values(req.body);
+      let user: User | undefined;
+
+      usernames.forEach(async (u, i) => {
+        user = await getRepository(User).findOne({ where: { username: u } });
+
+        if (user) {
+          members.push(user);
+        } else {
+          invalidUsernames.push(u as string);
+        }
+
+        // when the loop reaches the last username
+        // send them to the client
+        if (i === usernames.length - 1) {
+          // when there are no usernames found in the db
+          // ONLY invalid usernames
+          if (invalidUsernames.length > 0 && members.length === 0) {
+            res
+              .status(400)
+              .json({ message: 'Username/s not in the db', invalidUsernames });
+          } else if (members.length > 0 && invalidUsernames.length === 0) {
+            // when there are no invalid usernames
+            // ONLY valid users in the db
+            res.status(200).json({ message: 'Member/s Added', members });
+          } else {
+            // when there is a mix of both
+            res.status(200).json({ members, invalidUsernames });
+          }
+        }
+      });
+    } catch (e) {
+      res.status(409).json({ req, error: e });
     }
   };
 }
