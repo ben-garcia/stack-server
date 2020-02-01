@@ -32,7 +32,17 @@ class User extends BaseEntity {
     () => Workspace,
     workspace => workspace.members
   )
-  @JoinTable()
+  @JoinTable({
+    name: 'user_workspaces',
+    joinColumn: {
+      name: 'user',
+      referencedColumnName: 'id',
+    },
+    inverseJoinColumn: {
+      name: 'workspace',
+      referencedColumnName: 'id',
+    },
+  })
   workspaces: Workspace[];
 
   @OneToMany(

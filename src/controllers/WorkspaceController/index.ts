@@ -27,6 +27,7 @@ class WorkspaceController implements Controller {
 
   private initializeRoutes(): void {
     this.router.get('/', this.getUsersWorkspaces);
+    this.router.get('/:workspaceId', this.getWorkspaceMembers);
     this.router.post('/', this.createWorkspace);
     this.router.put('/:workspaceId', this.updateWorkspace);
   }
@@ -37,6 +38,28 @@ class WorkspaceController implements Controller {
         where: { owner: Number(req.query.userId) },
       });
       res.status(200).json({ workspaces });
+    } catch (e) {
+      res.json({ error: e });
+    }
+  };
+
+  public getWorkspaceMembers = async (req: Request, res: Response) => {
+    try {
+      const workspace = await this.workspaceRepository.findOne({
+        where: { id: Number(req.params.workspaceId) },
+        relations: ['members'],
+      });
+      const members: { id: number; username: string }[] = [];
+
+      /* eslint-disable no-unused-expressions */
+      workspace?.members.forEach(m => {
+        members.push({ id: m.id, username: m.username });
+      });
+
+      res.status(200).json({
+        message: 'Workspace members found',
+        members,
+      });
     } catch (e) {
       res.json({ error: e });
     }
@@ -73,13 +96,13 @@ class WorkspaceController implements Controller {
 
   public updateWorkspace = async (req: Request, res: Response) => {
     try {
-      // const { workspaceId } = req.params;
+      const { workspaceId } = req.params;
       const members: User[] = [];
       const invalidUsernames: string[] = [];
-      // get the correct workspace from db
-      // const workspace = await this.workspaceRepository.findOne({
-      //   id: Number(workspaceId),
-      // });
+      // // get the correct workspace from db
+      const workspace = await this.workspaceRepository.findOne({
+        id: Number(workspaceId),
+      });
 
       const usernames = Object.values(req.body);
       let user: User | undefined;
@@ -104,10 +127,20 @@ class WorkspaceController implements Controller {
             res
               .status(400)
               .json({ message: 'Username/s not in the db', invalidUsernames });
-          } else if (members.length > 0 && invalidUsernames.length === 0) {
+          } else if (
+            members.length > 0 &&
+            invalidUsernames.length === 0 &&
+            workspace
+          ) {
+            workspace.members = members;
+            // save to the db
+            const result = await workspace.save();
             // when there are no invalid usernames
             // ONLY valid users in the db
-            res.status(200).json({ message: 'Member/s Added', members });
+            res.status(200).json({
+              message: 'Member/s Added',
+              members: result.members,
+            });
           } else {
             // when there is a mix of both
             res.status(200).json({ members, invalidUsernames });
