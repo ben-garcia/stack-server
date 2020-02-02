@@ -101,7 +101,10 @@ class WorkspaceController implements Controller {
       const invalidUsernames: string[] = [];
       // // get the correct workspace from db
       const workspace = await this.workspaceRepository.findOne({
-        id: Number(workspaceId),
+        where: {
+          id: Number(workspaceId),
+        },
+        relations: ['members'],
       });
 
       const usernames = Object.values(req.body);
@@ -132,7 +135,7 @@ class WorkspaceController implements Controller {
             invalidUsernames.length === 0 &&
             workspace
           ) {
-            workspace.members = members;
+            workspace.members = [...workspace.members, ...members];
             // save to the db
             const result = await workspace.save();
             // when there are no invalid usernames
