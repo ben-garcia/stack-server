@@ -76,17 +76,22 @@ class WorkspaceController implements Controller {
       const user = await getRepository(User).findOne({
         id: Number(validatedWorkspace.owner),
       });
+      let workspace;
 
-      // if no errors then add the record
-      const workspace = await this.workspaceRepository
-        .create({
-          name: validatedWorkspace.name,
-          owner: user,
-        })
-        .save();
+      if (user) {
+        // if no errors then add the record
+        workspace = await this.workspaceRepository
+          .create({
+            name: validatedWorkspace.name,
+            owner: user,
+            members: [user],
+          })
+          .save();
 
-      // remove the user before sending it
-      delete workspace.owner;
+        // remove the user before sending it
+        delete workspace.owner;
+        delete workspace.members;
+      }
 
       res.status(201).json({ message: 'Workspace Created', workspace });
     } catch (e) {
