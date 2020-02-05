@@ -21,7 +21,7 @@ class Workspace extends BaseEntity {
     () => User,
     user => user.workspaces
   )
-  members: User[];
+  teammates: User[];
 
   @ManyToOne(
     () => User,

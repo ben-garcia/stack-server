@@ -30,7 +30,7 @@ class User extends BaseEntity {
 
   @ManyToMany(
     () => Workspace,
-    workspace => workspace.members
+    workspace => workspace.teammates
   )
   @JoinTable({
     name: 'user_workspaces',

@@ -27,7 +27,7 @@ class WorkspaceController implements Controller {
 
   private initializeRoutes(): void {
     this.router.get('/', this.getUsersWorkspaces);
-    this.router.get('/:workspaceId', this.getWorkspaceMembers);
+    this.router.get('/:workspaceId', this.getWorkspaceTeammates);
     this.router.post('/', this.createWorkspace);
     this.router.put('/:workspaceId', this.updateWorkspace);
   }
@@ -43,22 +43,22 @@ class WorkspaceController implements Controller {
     }
   };
 
-  public getWorkspaceMembers = async (req: Request, res: Response) => {
+  public getWorkspaceTeammates = async (req: Request, res: Response) => {
     try {
       const workspace = await this.workspaceRepository.findOne({
         where: { id: Number(req.params.workspaceId) },
-        relations: ['members'],
+        relations: ['teammates'],
       });
-      const members: { id: number; username: string }[] = [];
+      const teammates: { id: number; username: string }[] = [];
 
       /* eslint-disable no-unused-expressions */
-      workspace?.members.forEach(m => {
-        members.push({ id: m.id, username: m.username });
+      workspace?.teammates.forEach(m => {
+        teammates.push({ id: m.id, username: m.username });
       });
 
       res.status(200).json({
-        message: 'Workspace members found',
-        members,
+        message: 'Workspace teammates found',
+        teammates,
       });
     } catch (e) {
       res.json({ error: e });
@@ -84,13 +84,13 @@ class WorkspaceController implements Controller {
           .create({
             name: validatedWorkspace.name,
             owner: user,
-            members: [user],
+            teammates: [user],
           })
           .save();
 
         // remove the user before sending it
         delete workspace.owner;
-        delete workspace.members;
+        delete workspace.teammates;
       }
 
       res.status(201).json({ message: 'Workspace Created', workspace });
@@ -102,14 +102,14 @@ class WorkspaceController implements Controller {
   public updateWorkspace = async (req: Request, res: Response) => {
     try {
       const { workspaceId } = req.params;
-      const members: User[] = [];
+      const teammates: User[] = [];
       const invalidUsernames: string[] = [];
       // // get the correct workspace from db
       const workspace = await this.workspaceRepository.findOne({
         where: {
           id: Number(workspaceId),
         },
-        relations: ['members'],
+        relations: ['teammates'],
       });
 
       const usernames = Object.values(req.body);
@@ -121,7 +121,7 @@ class WorkspaceController implements Controller {
         if (user) {
           // don't send user's password to the client
           delete user.password;
-          members.push(user);
+          teammates.push(user);
         } else {
           invalidUsernames.push(u as string);
         }
@@ -131,27 +131,27 @@ class WorkspaceController implements Controller {
         if (i === usernames.length - 1) {
           // when there are no usernames found in the db
           // ONLY invalid usernames
-          if (invalidUsernames.length > 0 && members.length === 0) {
+          if (invalidUsernames.length > 0 && teammates.length === 0) {
             res
               .status(400)
               .json({ message: 'Username/s not in the db', invalidUsernames });
           } else if (
-            members.length > 0 &&
+            teammates.length > 0 &&
             invalidUsernames.length === 0 &&
             workspace
           ) {
-            workspace.members = [...workspace.members, ...members];
+            workspace.teammates = [...workspace.teammates, ...teammates];
             // save to the db
             const result = await workspace.save();
             // when there are no invalid usernames
             // ONLY valid users in the db
             res.status(200).json({
               message: 'Member/s Added',
-              members: result.members,
+              teammates: result.teammates,
             });
           } else {
             // when there is a mix of both
-            res.status(200).json({ members, invalidUsernames });
+            res.status(200).json({ teammates, invalidUsernames });
           }
         }
       });
