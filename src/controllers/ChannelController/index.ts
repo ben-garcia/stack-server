@@ -32,6 +32,7 @@ class ChannelController implements Controller {
   private initializeRoutes(): void {
     this.router.get('/', this.getWorkspaceChannels);
     this.router.post('/', this.createChannel);
+    this.router.put('/:channelId', this.updateChannel);
   }
 
   public getWorkspaceChannels = async (req: Request, res: Response) => {
@@ -71,6 +72,21 @@ class ChannelController implements Controller {
       delete channel.workspace;
 
       res.status(201).json({ message: 'Channel Created', channel });
+    } catch (e) {
+      res.status(409).json({ error: e });
+    }
+  };
+
+  public updateChannel = async (req: Request, res: Response) => {
+    try {
+      const { channelId } = req.params;
+      const { topic } = req.body;
+      // update
+      await this.channelRepository.update(Number(channelId), {
+        topic,
+      });
+
+      res.status(200).json({ message: 'Channel Updated' });
     } catch (e) {
       res.status(409).json({ error: e });
     }
