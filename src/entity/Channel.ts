@@ -8,6 +8,7 @@ import {
   ManyToOne,
   ManyToMany,
   OneToMany,
+  JoinTable,
 } from 'typeorm';
 
 import { Message, User, Workspace } from '.';
@@ -33,6 +34,17 @@ class Channel extends BaseEntity {
     () => User,
     user => user.channels
   )
+  @JoinTable({
+    name: 'channel_members',
+    joinColumn: {
+      name: 'channel',
+      referencedColumnName: 'id',
+    },
+    inverseJoinColumn: {
+      name: 'user',
+      referencedColumnName: 'id',
+    },
+  })
   members: User[];
 
   @Column('varchar')

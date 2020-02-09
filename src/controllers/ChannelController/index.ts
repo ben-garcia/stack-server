@@ -31,6 +31,7 @@ class ChannelController implements Controller {
 
   private initializeRoutes(): void {
     this.router.get('/', this.getWorkspaceChannels);
+    this.router.get('/:channelId', this.getChannelMembers);
     this.router.post('/', this.createChannel);
     this.router.put('/:channelId', this.updateChannel);
   }
@@ -42,6 +43,26 @@ class ChannelController implements Controller {
       });
       res.status(200).json({ channels });
     } catch (e) {
+      res.json({ error: e });
+    }
+  };
+
+  public getChannelMembers = async (req: Request, res: Response) => {
+    try {
+      // get the channel id passed in as a parameter
+      const { channelId } = req.params;
+      // get the correct channel from the db
+      // with members
+      const channel = await this.channelRepository.findOne({
+        where: { id: Number(channelId) },
+        relations: ['members'],
+      });
+      // send members to the client
+      res.status(200).json({ members: channel?.members });
+    } catch (e) {
+      // eslint-disable-next-line
+      console.log('getChannelMembers Error: ', e);
+      // send error
       res.json({ error: e });
     }
   };
@@ -73,6 +94,8 @@ class ChannelController implements Controller {
 
       res.status(201).json({ message: 'Channel Created', channel });
     } catch (e) {
+      // eslint-disable-next-line
+      console.log('createChannel Error: ', e);
       res.status(409).json({ error: e });
     }
   };

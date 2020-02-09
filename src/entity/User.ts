@@ -55,17 +55,6 @@ class User extends BaseEntity {
     () => Channel,
     channel => channel.members
   )
-  @JoinTable({
-    name: 'user_channels',
-    joinColumn: {
-      name: 'user',
-      referencedColumnName: 'id',
-    },
-    inverseJoinColumn: {
-      name: 'channel',
-      referencedColumnName: 'id',
-    },
-  })
   channels: Channel[];
 
   @CreateDateColumn()
