@@ -12,7 +12,7 @@ import {
 } from 'typeorm';
 import bcrypt from 'bcrypt';
 
-import { Workspace, Message } from '.';
+import { Channel, Workspace, Message } from '.';
 
 @Entity('users')
 class User extends BaseEntity {
@@ -50,6 +50,23 @@ class User extends BaseEntity {
     message => message.user
   )
   messages: Message[];
+
+  @ManyToMany(
+    () => Channel,
+    channel => channel.members
+  )
+  @JoinTable({
+    name: 'user_channels',
+    joinColumn: {
+      name: 'user',
+      referencedColumnName: 'id',
+    },
+    inverseJoinColumn: {
+      name: 'channel',
+      referencedColumnName: 'id',
+    },
+  })
+  channels: Channel[];
 
   @CreateDateColumn()
   createdAt: Date;

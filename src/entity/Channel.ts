@@ -6,11 +6,11 @@ import {
   UpdateDateColumn,
   Column,
   ManyToOne,
+  ManyToMany,
   OneToMany,
 } from 'typeorm';
 
-import Workspace from './Workspace';
-import Message from './Message';
+import { Message, User, Workspace } from '.';
 
 @Entity('channels')
 class Channel extends BaseEntity {
@@ -28,6 +28,12 @@ class Channel extends BaseEntity {
     message => message.channel
   )
   messages: Message[];
+
+  @ManyToMany(
+    () => User,
+    user => user.channels
+  )
+  members: User[];
 
   @Column('varchar')
   description: string;
