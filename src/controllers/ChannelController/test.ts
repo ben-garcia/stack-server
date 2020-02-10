@@ -31,7 +31,10 @@ describe('ChannelController', () => {
 
   describe('/channels POST', () => {
     const mockRequest = {
-      body: {},
+      body: {
+        channel: {},
+        userId: 1,
+      },
     };
     const mockResponse = {
       status: jest.fn().mockReturnThis(),
@@ -47,7 +50,7 @@ describe('ChannelController', () => {
       );
       expect(channelController.schema.validateAsync).toHaveBeenCalled();
       expect(channelController.schema.validateAsync).toHaveBeenCalledWith(
-        mockRequest.body
+        mockRequest.body.channel
       );
     });
   });

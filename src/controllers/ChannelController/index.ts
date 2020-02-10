@@ -2,7 +2,7 @@ import express, { Request, Response, Router } from 'express';
 import { getRepository, Repository } from 'typeorm';
 import Joi, { ObjectSchema } from '@hapi/joi';
 
-import { Channel, Workspace } from '../../entity';
+import { Channel, User, Workspace } from '../../entity';
 import { Controller } from '../types';
 
 class ChannelController implements Controller {
@@ -70,7 +70,14 @@ class ChannelController implements Controller {
   public createChannel = async (req: Request, res: Response) => {
     try {
       // verify that the channel being created matches schema.
-      const validatedChannel = await this.schema.validateAsync(req.body);
+      const validatedChannel = await this.schema.validateAsync(
+        req.body.channel
+      );
+      // get the user id
+      const { userId } = req.body;
+
+      // get the creator of the channel
+      const user = await getRepository(User).findOne({ id: Number(userId) });
 
       // TODO: get the ownerId from session
       // for now its ok since I am using POSTman
@@ -86,11 +93,14 @@ class ChannelController implements Controller {
           description: validatedChannel.description,
           private: validatedChannel.private,
           workspace,
+          members: [user!],
         })
         .save();
 
       // remove the workspace before sending it
       delete channel.workspace;
+      // remove the members before sending to the client
+      delete channel.members;
 
       res.status(201).json({ message: 'Channel Created', channel });
     } catch (e) {
