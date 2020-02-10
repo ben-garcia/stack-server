@@ -142,12 +142,14 @@ class WorkspaceController implements Controller {
           ) {
             workspace.teammates = [...workspace.teammates, ...teammates];
             // save to the db
-            const result = await workspace.save();
+            await workspace.save();
             // when there are no invalid usernames
             // ONLY valid users in the db
+            // send the teammates that were added
+            // back to the client
             res.status(200).json({
               message: 'Member/s Added',
-              teammates: result.teammates,
+              teammates,
             });
           } else {
             // when there is a mix of both
