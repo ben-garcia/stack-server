@@ -113,10 +113,9 @@ class ChannelController implements Controller {
   public updateChannel = async (req: Request, res: Response) => {
     try {
       const { channelId } = req.params;
-      const { topic } = req.body;
       // update
       await this.channelRepository.update(Number(channelId), {
-        topic,
+        ...req.body,
       });
 
       res.status(200).json({ message: 'Channel Updated' });
