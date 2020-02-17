@@ -24,6 +24,7 @@ class ChannelController implements Controller {
         .required(),
       private: Joi.boolean().required(),
       workspace: Joi.number().required(),
+      members: Joi.array(),
     });
 
     this.initializeRoutes();
@@ -75,9 +76,31 @@ class ChannelController implements Controller {
       );
       // get the user id
       const { userId } = req.body;
+      // store the users to add members
+      const members: User[] = [];
 
       // get the creator of the channel
       const user = await getRepository(User).findOne({ id: Number(userId) });
+
+      if (user) {
+        members.push(user);
+      }
+
+      // // only query the db if there is at least 1
+      if (req.body.channel.members?.length > 0) {
+        req.body.channel.members.forEach(async (username: string) => {
+          // query the db for the username
+          const newMember = await getRepository(User).findOne({
+            username,
+          });
+
+          // if there is record,
+          // add it the members array
+          if (user) {
+            members.push(newMember!);
+          }
+        });
+      }
 
       // TODO: get the ownerId from session
       // for now its ok since I am using POSTman
@@ -93,7 +116,7 @@ class ChannelController implements Controller {
           description: validatedChannel.description,
           private: validatedChannel.private,
           workspace,
-          members: [user!],
+          members,
         })
         .save();
 
