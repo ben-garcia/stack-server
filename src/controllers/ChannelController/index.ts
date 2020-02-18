@@ -136,13 +136,49 @@ class ChannelController implements Controller {
   public updateChannel = async (req: Request, res: Response) => {
     try {
       const { channelId } = req.params;
-      // update
-      await this.channelRepository.update(Number(channelId), {
-        ...req.body,
-      });
+
+      if (
+        req.body.members?.length > 0 &&
+        !req.body.topic &&
+        !req.body.description
+      ) {
+        const newMembers: User[] = [];
+
+        // loop through the members passed in the body of the request object
+        // and query the db for each user and
+        // add it to the array of new members
+        req.body.members.forEach(async (username: string) => {
+          const user = await getRepository(User).findOne({
+            where: { username },
+          });
+
+          if (user) {
+            newMembers.push(user);
+          }
+        });
+
+        const channel = await this.channelRepository.findOne({
+          where: {
+            id: Number(channelId),
+          },
+          relations: ['members'],
+        });
+
+        // update channel with
+        channel!.members = [...channel!.members, ...newMembers];
+
+        await channel!.save();
+      } else if (!req.body.members) {
+        // update
+        await this.channelRepository.update(Number(channelId), {
+          ...req.body,
+        });
+      }
 
       res.status(200).json({ message: 'Channel Updated' });
     } catch (e) {
+      // eslint-disable-next-line
+      console.log('ChannelController updateChannel error: ', e);
       res.status(409).json({ error: e });
     }
   };
