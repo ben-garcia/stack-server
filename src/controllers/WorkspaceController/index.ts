@@ -26,13 +26,13 @@ class WorkspaceController implements Controller {
   }
 
   private initializeRoutes(): void {
-    this.router.get('/', this.getUsersWorkspaces);
+    this.router.get('/', this.getUserWorkspaces);
     this.router.get('/:workspaceId', this.getWorkspaceTeammates);
     this.router.post('/', this.createWorkspace);
     this.router.put('/:workspaceId', this.updateWorkspace);
   }
 
-  public getUsersWorkspaces = async (req: Request, res: Response) => {
+  public getUserWorkspaces = async (req: Request, res: Response) => {
     try {
       const workspaces = await this.workspaceRepository.find({
         where: { owner: Number(req.query.userId) },
@@ -45,8 +45,9 @@ class WorkspaceController implements Controller {
 
   public getWorkspaceTeammates = async (req: Request, res: Response) => {
     try {
+      const { workspaceId } = req.params;
       const workspace = await this.workspaceRepository.findOne({
-        where: { id: Number(req.params.workspaceId) },
+        where: { id: Number(workspaceId) },
         relations: ['teammates'],
       });
       const teammates: { id: number; username: string }[] = [];
