@@ -109,23 +109,25 @@ class ChannelController implements Controller {
         id: Number(validatedChannel.workspace),
       });
 
-      // if no errors then add the record
-      const channel = await this.channelRepository
-        .create({
-          name: validatedChannel.name,
-          description: validatedChannel.description,
-          private: validatedChannel.private,
-          workspace,
-          members,
-        })
-        .save();
+      if (workspace) {
+        // if no errors then add the record
+        const channel = await this.channelRepository
+          .create({
+            name: validatedChannel.name,
+            description: validatedChannel.description,
+            private: validatedChannel.private,
+            workspace,
+            members,
+          })
+          .save();
 
-      // remove the workspace before sending it
-      delete channel.workspace;
-      // remove the members before sending to the client
-      delete channel.members;
+        // remove the workspace before sending it
+        delete channel.workspace;
+        // remove the members before sending to the client
+        delete channel.members;
 
-      res.status(201).json({ message: 'Channel Created', channel });
+        res.status(201).json({ message: 'Channel Created', channel });
+      }
     } catch (e) {
       // eslint-disable-next-line
       console.log('createChannel Error: ', e);

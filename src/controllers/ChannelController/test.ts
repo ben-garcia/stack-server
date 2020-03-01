@@ -8,7 +8,7 @@ describe('ChannelController', () => {
   jest.spyOn(typeorm, 'getRepository').mockImplementation(
     () =>
       ({
-        find: jest.fn(),
+        findOne: jest.fn(),
         create: jest.fn(),
         save: jest.fn(),
       } as any)
@@ -33,7 +33,6 @@ describe('ChannelController', () => {
     const mockRequest = {
       body: {
         channel: {},
-        userId: 1,
       },
     };
     const mockResponse = {
