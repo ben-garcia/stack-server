@@ -27,8 +27,28 @@ class MessageController implements Controller {
   }
 
   private initializeRoutes(): void {
+    this.router.get('/', this.getChannelMessages);
     this.router.post('/', this.createMessage);
   }
+
+  public getChannelMessages = async (req: Request, res: Response) => {
+    try {
+      // get the channel id passed in as a parameter
+      const { channelId } = req.query;
+      // get the correct channel from the db
+      // with members
+      const messages = await this.messageRepository.find({
+        where: { channelId: Number(channelId) },
+      });
+      // send messages to the client
+      res.status(200).json({ messages });
+    } catch (e) {
+      // eslint-disable-next-line
+      console.log('getChannelMessages Error: ', e);
+      // send error
+      res.json({ error: e });
+    }
+  };
 
   public createMessage = async (req: Request, res: Response) => {
     try {
