@@ -36,9 +36,8 @@ class MessageController implements Controller {
       // get the channel id passed in as a parameter
       const { channelId } = req.query;
       // get the correct channel from the db
-      // with members
       const messages = await this.messageRepository.find({
-        where: { channelId: Number(channelId) },
+        where: { channel: Number(channelId) },
       });
       // send messages to the client
       res.status(200).json({ messages });
