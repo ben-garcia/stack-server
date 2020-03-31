@@ -38,7 +38,22 @@ class MessageController implements Controller {
       // get the correct channel from the db
       const messages = await this.messageRepository.find({
         where: { channel: Number(channelId) },
+        relations: ['user'],
       });
+      // quick fix, there should be a better way to do this in typeorm
+      messages.forEach((m: Message) => {
+        // eslint-disable-next-line
+        delete m.user.password;
+        // eslint-disable-next-line
+        delete m.user.id;
+        // eslint-disable-next-line
+        delete m.user.email;
+        // eslint-disable-next-line
+        delete m.user.createdAt;
+        // eslint-disable-next-line
+        delete m.user.updatedAt;
+      });
+
       // send messages to the client
       res.status(200).json({ messages });
     } catch (e) {
@@ -80,9 +95,9 @@ class MessageController implements Controller {
           })
           .save();
 
-        // // remove the user before sending it
+        //  remove the user before sending it
         delete message.user;
-        // // remove the channel before sending to the client
+        //  remove the channel before sending to the client
         delete message.channel;
 
         res.status(201).json({
