@@ -39,6 +39,7 @@ class MessageController implements Controller {
       const messages = await this.messageRepository.find({
         where: { channel: Number(channelId) },
         relations: ['user'],
+        order: { createdAt: 'ASC' },
       });
       // quick fix, there should be a better way to do this in typeorm
       messages.forEach((m: Message) => {
