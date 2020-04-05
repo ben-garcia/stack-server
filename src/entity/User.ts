@@ -12,7 +12,7 @@ import {
 } from 'typeorm';
 import bcrypt from 'bcrypt';
 
-import { Channel, Workspace, Message } from '.';
+import { Channel, DirectMessage, Workspace, Message } from '.';
 
 @Entity('users')
 class User extends BaseEntity {
@@ -50,6 +50,12 @@ class User extends BaseEntity {
     message => message.user
   )
   messages: Message[];
+
+  @OneToMany(
+    () => DirectMessage,
+    directMessage => directMessage.user
+  )
+  directMessages: DirectMessage[];
 
   @ManyToMany(
     () => Channel,
