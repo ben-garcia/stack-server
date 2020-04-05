@@ -5,6 +5,7 @@ import App from './App';
 import {
   AuthenticationController,
   ChannelController,
+  DirectMessageController,
   MessageController,
   WorkspaceController,
 } from './controllers';
@@ -23,6 +24,7 @@ import {
   const app = new App([
     new AuthenticationController(),
     new ChannelController(),
+    new DirectMessageController(),
     new MessageController(),
     new WorkspaceController(),
   ]);
