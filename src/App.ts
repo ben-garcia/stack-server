@@ -1,10 +1,12 @@
-import express, { Application } from 'express';
-import morgan from 'morgan';
-import helmet from 'helmet';
-import cors from 'cors';
-import session from 'express-session';
-import redis from 'redis';
 import connectRedis from 'connect-redis';
+import cors from 'cors';
+import express, { Application } from 'express';
+import helmet from 'helmet';
+import http from 'http';
+import socketio from 'socket.io';
+import morgan from 'morgan';
+import redis from 'redis';
+import session from 'express-session';
 
 import { Controller } from './controllers/types';
 
@@ -17,9 +19,12 @@ const redisClient = redis.createClient({
 
 class App {
   private app: Application;
+  private server: http.Server;
+  private io: socketio.Server;
 
   constructor(controllers: Controller[]) {
     this.app = express();
+    this.server = http.createServer(this.app);
 
     this.initializeMiddleware();
     this.initializeControllers(controllers);
@@ -29,7 +34,20 @@ class App {
   public listen(): void {
     const port = process.env.PORT || 8080;
 
-    this.app.listen(port, () => {
+    this.io = socketio(this.server);
+    this.io.of('/namespace').on('connection', (socket: socketio.Socket) => {
+      // eslint-disable-next-line
+      console.log('----------------- connected -------------');
+      socket.emit('test', { message: 'testing' });
+      socket.on('disconnect', () => {
+        // eslint-disable-next-line
+        console.log('----------------- disconnected -------------');
+      });
+    });
+
+    // this.app.set('socketio', this.io);
+
+    this.server.listen(port, () => {
       // eslint-disable-next-line no-console
       console.log(`Listening on port ${port}`);
     });
