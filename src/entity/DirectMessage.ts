@@ -21,6 +21,9 @@ class DirectMessage extends BaseEntity {
   )
   user: User;
 
+  @Column()
+  workspaceId: number;
+
   @Column('varchar')
   content: string;
 

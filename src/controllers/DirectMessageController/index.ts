@@ -20,6 +20,7 @@ class DirectMessageController implements Controller {
         .trim()
         .required(),
       user: Joi.number().required(),
+      workspaceId: Joi.number().required(),
     });
 
     this.initializeRoutes();
@@ -32,15 +33,15 @@ class DirectMessageController implements Controller {
 
   public getUserDirectMessages = async (req: Request, res: Response) => {
     try {
-      // get the channel id passed in as a parameter
-      const { teammateId } = req.query;
+      // get the channel id and workspace id
+      const { teammateId, workspaceId } = req.query;
       const user = await getRepository(User).findOne({
         where: { id: Number(teammateId) },
       });
       if (user) {
         // get the correct channel from the db
         const directMessages = await this.directMessageRepository.find({
-          where: { user: user.id },
+          where: { user: user.id, workspaceId: Number(workspaceId) },
         });
         // send messages to the client
         res.status(200).json({ directMessages });
@@ -61,7 +62,7 @@ class DirectMessageController implements Controller {
       const validatedDirectMessage = await this.schema.validateAsync(
         req.body.message
       );
-      const { user: userId } = req.body.message;
+      const { user: userId, workspaceId } = req.body.message;
       // get the user who created the message from the db
       const user = await getRepository(User).findOne({
         where: {
@@ -75,6 +76,7 @@ class DirectMessageController implements Controller {
           .create({
             content: validatedDirectMessage.content,
             user,
+            workspaceId,
           })
           .save();
 
