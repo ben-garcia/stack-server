@@ -103,7 +103,9 @@ class WorkspaceController implements Controller {
   public updateWorkspace = async (req: Request, res: Response) => {
     try {
       const { workspaceId } = req.params;
+      // list of users that have been validated
       const teammates: User[] = [];
+      // list of users that don't exitst in the database
       const invalidUsernames: string[] = [];
       // // get the correct workspace from db
       const workspace = await this.workspaceRepository.findOne({
@@ -113,18 +115,22 @@ class WorkspaceController implements Controller {
         relations: ['teammates'],
       });
 
+      // get the usernames passed in the request body
       const usernames = Object.values(req.body);
       let user: User | undefined;
 
-      usernames.forEach(async (u, i) => {
-        user = await getRepository(User).findOne({ where: { username: u } });
+      usernames.forEach(async (username, i) => {
+        // query the db for the user with username
+        user = await getRepository(User).findOne({ where: { username } });
 
         if (user) {
           // don't send user's password to the client
           delete user.password;
+          // valid teammate
           teammates.push(user);
         } else {
-          invalidUsernames.push(u as string);
+          // user doesn't exits
+          invalidUsernames.push(username as string);
         }
 
         // when the loop reaches the last username
@@ -141,6 +147,7 @@ class WorkspaceController implements Controller {
             invalidUsernames.length === 0 &&
             workspace
           ) {
+            // updated the workspace
             workspace.teammates = [...workspace.teammates, ...teammates];
             // save to the db
             await workspace.save();
@@ -154,6 +161,12 @@ class WorkspaceController implements Controller {
             });
           } else {
             // when there is a mix of both
+            if (workspace) {
+              // update workspace with the  validated usernames
+              workspace.teammates = [...workspace.teammates, ...teammates];
+              await workspace.save();
+            }
+            // send new teammates and invalid usernames to the client
             res.status(200).json({ teammates, invalidUsernames });
           }
         }
