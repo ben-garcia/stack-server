@@ -34,9 +34,14 @@ class WorkspaceController implements Controller {
 
   public getUserWorkspaces = async (req: Request, res: Response) => {
     try {
-      const workspaces = await this.workspaceRepository.find({
-        where: { owner: Number(req.query.userId) },
-      });
+      const { userId } = req.query;
+
+      // all workspaces that a user is a member
+      // which are those that the user has created or have been invited to
+      const workspaces = await this.workspaceRepository.query(
+        `SELECT workspaces.id, workspaces.name, workspaces."ownerId" FROM workspaces INNER JOIN user_workspaces ON workspaces.id = user_workspaces.workspace INNER JOIN users ON user_workspaces.user = users.id and users.id = ${userId}`
+      );
+
       res.status(200).json({ workspaces });
     } catch (e) {
       res.json({ error: e });
