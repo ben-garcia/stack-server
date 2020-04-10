@@ -38,7 +38,12 @@ class App {
     this.io.of('/namespace').on('connection', (socket: socketio.Socket) => {
       // eslint-disable-next-line
       console.log('----------------- connected -------------');
-      socket.emit('test', { message: 'testing' });
+      socket.on('new-user', username => {
+        socket.broadcast.emit('new-user', username);
+      });
+      socket.on('channel-message', message => {
+        socket.broadcast.emit('channel-message', message);
+      });
       socket.on('disconnect', () => {
         // eslint-disable-next-line
         console.log('----------------- disconnected -------------');
