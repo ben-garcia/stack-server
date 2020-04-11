@@ -38,15 +38,37 @@ class App {
     this.io.of('/namespace').on('connection', (socket: socketio.Socket) => {
       // eslint-disable-next-line
       console.log('----------------- connected -------------');
-      socket.on('new-user', username => {
-        socket.broadcast.emit('new-user', username);
+      socket.on('new-user', ({ username, channelName }) => {
+        socket.join(channelName, (err: any) => {
+          if (err) {
+            // eslint-disable-next-line
+            console.log(
+              '--------------------------error---------------------------------'
+            );
+            // eslint-disable-next-line
+            console.log(err);
+          }
+
+          socket.to(channelName).broadcast.emit('new-user', {
+            username,
+            channelName,
+          });
+        });
       });
       socket.on('channel-message', message => {
-        socket.broadcast.emit('channel-message', message);
+        const { channelName } = JSON.parse(message);
+        // eslint-disable-next-line
+        console.log(`----------------${channelName}-----------`);
+        socket.to(channelName).broadcast.emit('channel-message', message);
+      });
+      socket.on('direct-message', message => {
+        const { channelName } = JSON.parse(message);
+        socket.to(channelName).broadcast.emit('direct-message', message);
       });
       socket.on('disconnect', () => {
         // eslint-disable-next-line
         console.log('----------------- disconnected -------------');
+        socket.leaveAll();
       });
     });
 
