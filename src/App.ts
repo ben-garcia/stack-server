@@ -35,7 +35,7 @@ class App {
     const port = process.env.PORT || 8080;
 
     this.io = socketio(this.server);
-    this.io.of('/namespace').on('connection', (socket: socketio.Socket) => {
+    this.io.on('connection', (socket: socketio.Socket) => {
       // eslint-disable-next-line
       console.log('----------------- connected -------------');
       socket.on('new-user', ({ username, channelName }) => {

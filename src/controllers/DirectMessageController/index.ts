@@ -34,15 +34,41 @@ class DirectMessageController implements Controller {
   public getUserDirectMessages = async (req: Request, res: Response) => {
     try {
       // get the channel id and workspace id
-      const { teammateId, workspaceId } = req.query;
+      const { userId, teammateId, workspaceId } = req.query;
       const user = await getRepository(User).findOne({
-        where: { id: Number(teammateId) },
+        where: { id: Number(userId) },
       });
       if (user) {
         // get the correct channel from the db
         const directMessages = await this.directMessageRepository.find({
-          where: { user: user.id, workspaceId: Number(workspaceId) },
+          where: [
+            {
+              user: Number(teammateId),
+              workspaceId: Number(workspaceId),
+            },
+            {
+              user: Number(userId),
+              workspaceId: Number(workspaceId),
+            },
+          ],
+          relations: ['user'],
+          order: { createdAt: 'ASC' },
         });
+
+        // quick fix, there should be a better way to do this in typeorm
+        directMessages.forEach((m: DirectMessage) => {
+          // eslint-disable-next-line
+          delete m.user.password;
+          // eslint-disable-next-line
+          delete m.user.id;
+          // eslint-disable-next-line
+          delete m.user.email;
+          // eslint-disable-next-line
+          delete m.user.createdAt;
+          // eslint-disable-next-line
+          delete m.user.updatedAt;
+        });
+
         // send messages to the client
         res.status(200).json({ directMessages });
       } else {
