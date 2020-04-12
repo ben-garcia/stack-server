@@ -30,10 +30,7 @@ class App {
     this.initializeControllers(controllers);
   }
 
-  // wrapper method for the listen method in express
-  public listen(): void {
-    const port = process.env.PORT || 8080;
-
+  private initializeSocketIO(): void {
     this.io = socketio(this.server);
     this.io.on('connection', (socket: socketio.Socket) => {
       // eslint-disable-next-line
@@ -42,11 +39,7 @@ class App {
         socket.join(channelName, (err: any) => {
           if (err) {
             // eslint-disable-next-line
-            console.log(
-              '--------------------------error---------------------------------'
-            );
-            // eslint-disable-next-line
-            console.log(err);
+            console.log(`couldn't join room ${channelName}: `, err);
           }
 
           socket.to(channelName).broadcast.emit('new-user', {
@@ -71,8 +64,13 @@ class App {
         socket.leaveAll();
       });
     });
+  }
 
-    // this.app.set('socketio', this.io);
+  // wrapper method for the listen method in express
+  public listen(): void {
+    const port = process.env.PORT || 8080;
+
+    this.initializeSocketIO();
 
     this.server.listen(port, () => {
       // eslint-disable-next-line no-console
