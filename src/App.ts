@@ -21,10 +21,12 @@ class App {
   private app: Application;
   private server: http.Server;
   private io: socketio.Server;
+  private users: Map<string, string>;
 
   constructor(controllers: Controller[]) {
     this.app = express();
     this.server = http.createServer(this.app);
+    this.users = new Map();
 
     this.initializeMiddleware();
     this.initializeControllers(controllers);
@@ -35,16 +37,36 @@ class App {
     this.io.on('connection', (socket: socketio.Socket) => {
       // eslint-disable-next-line
       console.log('----------------- connected -------------');
-      socket.on('new-user', ({ username, channelName }) => {
+      socket.on('user-connected', ({ username, channelName }) => {
+        this.users.set(socket.id, username);
+        // eslint-disable-next-line
         socket.join(channelName, (err: any) => {
           if (err) {
             // eslint-disable-next-line
             console.log(`couldn't join room ${channelName}: `, err);
           }
 
-          socket.to(channelName).broadcast.emit('new-user', {
-            username,
-            channelName,
+          // keep track of the usernames that belong to the same room
+          const usernames: any = [];
+          // list of socket ids connect to the room
+          const socketIds = socket.to(channelName).adapter.sids;
+          // parse socketIds
+          const parsedSocketIds = JSON.parse(JSON.stringify(socketIds));
+          // get the values which is another object containing socket id
+          // and room name(which indicates that the socket is in a particular room)
+          Object.values(parsedSocketIds).forEach((obj: any) => {
+            // get the key of each individual object
+            const keys = Object.keys(obj);
+            // when the socket is part of the room in question then add
+            // the username to send to the client
+            if (obj[channelName]) {
+              usernames.push(this.users.get(keys[0]));
+            }
+          });
+
+          // send to all connected, to the room, including sender
+          this.io.in(channelName).emit('user-connected', {
+            usernames,
           });
         });
       });
@@ -61,6 +83,13 @@ class App {
       socket.on('disconnect', () => {
         // eslint-disable-next-line
         console.log('----------------- disconnected -------------');
+        const { rooms } = socket.adapter;
+        const channelName = Object.keys(rooms)[0];
+        socket
+          .to(channelName)
+          .emit('user-disconnected', this.users.get(socket.id));
+        // remove from the users map
+        this.users.delete(socket.id);
         socket.leaveAll();
       });
     });
