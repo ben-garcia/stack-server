@@ -58,6 +58,9 @@ class ChannelController implements Controller {
         where: { id: Number(channelId) },
         relations: ['members'],
       });
+      // eslint-disable-next-line
+      channel?.members.forEach((m: User) => delete m.password);
+
       // send members to the client
       res.status(200).json({ members: channel?.members });
     } catch (e) {
