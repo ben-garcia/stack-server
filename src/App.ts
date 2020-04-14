@@ -38,6 +38,7 @@ class App {
       // eslint-disable-next-line
       console.log('----------------- connected -------------');
       socket.on('user-connected', ({ username, channelName }) => {
+        // keep track of newly connected user
         this.users.set(socket.id, username);
         // eslint-disable-next-line
         socket.join(channelName, (err: any) => {
@@ -63,7 +64,6 @@ class App {
               usernames.push(this.users.get(keys[0]));
             }
           });
-
           // send to all connected, to the room, including sender
           this.io.in(channelName).emit('user-connected', {
             usernames,
@@ -83,14 +83,11 @@ class App {
       socket.on('disconnect', () => {
         // eslint-disable-next-line
         console.log('----------------- disconnected -------------');
-        const { rooms } = socket.adapter;
-        const channelName = Object.keys(rooms)[0];
-        socket
-          .to(channelName)
-          .emit('user-disconnected', this.users.get(socket.id));
-        // remove from the users map
-        this.users.delete(socket.id);
-        socket.leaveAll();
+        socket.emit('user-disconnected', this.users.get(socket.id));
+        if (this.users.has(socket.id)) {
+          // remove from users map
+          this.users.delete(socket.id);
+        }
       });
     });
   }
