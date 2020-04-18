@@ -157,11 +157,13 @@ class ChannelController implements Controller {
             where: { username },
           });
 
+          // make sure there a user in the db
           if (user) {
             newMembers.push(user);
           }
         });
 
+        // query the db for the correct channel
         const channel = await this.channelRepository.findOne({
           where: {
             id: Number(channelId),
@@ -169,18 +171,22 @@ class ChannelController implements Controller {
           relations: ['members'],
         });
 
-        // update channel with
+        // update channel with new members
         channel!.members = [...channel!.members, ...newMembers];
 
         await channel!.save();
+
+        res.status(200).json({ message: 'Channel members have been updated' });
       } else if (!req.body.members) {
-        // update
+        // update the channel's description or topic
         await this.channelRepository.update(Number(channelId), {
           ...req.body,
         });
+        res.status(200).json({ message: 'Channel description/topic changed' });
+      } else {
+        // something has gone wrong
+        res.status(400).json({ message: 'Something went wrong' });
       }
-
-      res.status(200).json({ message: 'Channel Updated' });
     } catch (e) {
       // eslint-disable-next-line
       console.log('ChannelController updateChannel error: ', e);
