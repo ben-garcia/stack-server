@@ -59,7 +59,16 @@ class ChannelController implements Controller {
         relations: ['members'],
       });
       // eslint-disable-next-line
-      channel?.members.forEach((m: User) => delete m.password);
+      channel?.members.forEach((m: User) => {
+        // eslint-disable-next-line
+        delete m.createdAt;
+        // eslint-disable-next-line
+        delete m.email;
+        // eslint-disable-next-line
+        delete m.password;
+        // eslint-disable-next-line
+        delete m.updatedAt;
+      });
 
       // send members to the client
       res.status(200).json({ members: channel?.members });
@@ -79,7 +88,7 @@ class ChannelController implements Controller {
       );
       // get the user id
       const { userId } = req.body;
-      // store the users to add members
+      // store the users to add as members
       const members: User[] = [];
 
       // get the creator of the channel
@@ -89,8 +98,9 @@ class ChannelController implements Controller {
         members.push(user);
       }
 
-      // // only query the db if there is at least 1
-      if (req.body.channel.members?.length > 0) {
+      // only query the db if there is at least 2 members(including the user)
+      // and channel should be set to public
+      if (req.body.channel.members?.length > 1 && !validatedChannel.private) {
         req.body.channel.members.forEach(async (username: string) => {
           // query the db for the username
           const newMember = await getRepository(User).findOne({
@@ -99,8 +109,8 @@ class ChannelController implements Controller {
 
           // if there is record,
           // add it the members array
-          if (user) {
-            members.push(newMember!);
+          if (newMember) {
+            members.push(newMember);
           }
         });
       }
@@ -120,14 +130,14 @@ class ChannelController implements Controller {
             description: validatedChannel.description,
             private: validatedChannel.private,
             workspace,
-            members,
+            members: [...members],
           })
           .save();
 
         // remove the workspace before sending it
         delete channel.workspace;
         // remove the members before sending to the client
-        delete channel.members;
+        delete channel?.members;
 
         res.status(201).json({ message: 'Channel Created', channel });
       }
