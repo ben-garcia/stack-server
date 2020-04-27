@@ -21,7 +21,12 @@ class App {
   private app: Application;
   private server: http.Server;
   private io: socketio.Server;
-  private users: Map<string, string>;
+  // users with be store as:
+  // socketIO will map to tuple containing
+  // username,
+  // workspaceName(which is string in the form `${workspace.id}:${workspaceanme}`)
+  // channelName(which is either channel or teammate)
+  private users: Map<string, [string, string, string]>;
 
   constructor(controllers: Controller[]) {
     this.app = express();
@@ -35,59 +40,76 @@ class App {
   private initializeSocketIO(): void {
     this.io = socketio(this.server);
     this.io.on('connection', (socket: socketio.Socket) => {
-      // eslint-disable-next-line
-      console.log('----------------- connected -------------');
-      socket.on('user-connected', ({ username, channelName }) => {
-        // keep track of newly connected user
-        this.users.set(socket.id, username);
-        // eslint-disable-next-line
-        socket.join(channelName, (err: any) => {
-          if (err) {
-            // eslint-disable-next-line
-            console.log(`couldn't join room ${channelName}: `, err);
-          }
-
-          // keep track of the usernames that belong to the same room
-          const usernames: any = [];
-          // list of socket ids connect to the room
-          const socketIds = socket.to(channelName).adapter.sids;
-          // parse socketIds
-          const parsedSocketIds = JSON.parse(JSON.stringify(socketIds));
-          // get the values which is another object containing socket id
-          // and room name(which indicates that the socket is in a particular room)
-          Object.values(parsedSocketIds).forEach((obj: any) => {
-            // get the key of each individual object
-            const keys = Object.keys(obj);
-            // when the socket is part of the room in question then add
-            // the username to send to the client
-            if (obj[channelName]) {
-              usernames.push(this.users.get(keys[0]));
+      socket.on(
+        'user-connected',
+        ({ channelName, username, workspaceName }) => {
+          // keep track of newly connected user
+          // channel/teammate channel they're in
+          // username,
+          // along with the workspace name,
+          this.users.set(socket.id, [username, workspaceName, channelName]);
+          // this room will be used to emit when a user connects/disconnects
+          socket.join(workspaceName, (err: any) => {
+            if (err) {
+              // eslint-disable-next-line
+              console.log(`couldn't join room ${workspaceName}: `, err);
+            }
+            // keep track of the usernames that belong to the same room
+            const usernames: any = [];
+            // list of socket ids connect to the room
+            const socketIds = socket.to(workspaceName).adapter.sids;
+            // parse socketIds
+            const parsedSocketIds = JSON.parse(JSON.stringify(socketIds));
+            // get the values which is another object containing socket id
+            // and room name(which indicates that the socket is in a particular room)
+            Object.values(parsedSocketIds).forEach((obj: any) => {
+              // get the key of each individual object
+              const keys = Object.keys(obj);
+              // when the socket is part of the room in question then add
+              // the username to send to the client
+              if (obj[workspaceName]) {
+                const user = this.users.get(keys[0]);
+                if (user) {
+                  usernames.push(user[0]);
+                }
+              }
+            });
+            // send to all connected to the room, including sender
+            // the list of the users who are in the same workspace
+            this.io.in(workspaceName).emit('user-connected', {
+              usernames,
+            });
+          });
+          // this room is either a channel(where the user is a member of) or
+          // a way to communicate with a single teammate
+          socket.join(channelName, (err: any) => {
+            if (err) {
+              // eslint-disable-next-line
+              console.log(`couldn't join room ${channelName}: `, err);
             }
           });
-          // send to all connected, to the room, including sender
-          this.io.in(channelName).emit('user-connected', {
-            usernames,
-          });
-        });
-      });
+        }
+      );
       socket.on('channel-message', message => {
         const { channelName } = JSON.parse(message);
-        // eslint-disable-next-line
-        console.log(`----------------${channelName}-----------`);
         socket.to(channelName).broadcast.emit('channel-message', message);
       });
       socket.on('direct-message', message => {
         const { channelName } = JSON.parse(message);
         socket.to(channelName).broadcast.emit('direct-message', message);
       });
-      socket.on('disconnect', () => {
-        // eslint-disable-next-line
-        console.log('----------------- disconnected -------------');
-        socket.emit('user-disconnected', this.users.get(socket.id));
-        if (this.users.has(socket.id)) {
-          // remove from users map
-          this.users.delete(socket.id);
+      socket.on('user-disconnected', username => {
+        const user = this.users.get(socket.id);
+        if (user) {
+          // send the username of the user that has disconnected
+          socket.in(user[1]).emit('user-disconnected', username);
         }
+        // leave both channels
+        socket.leaveAll();
+      });
+      socket.on('disconnect', () => {
+        // remove the user from users map
+        this.users.delete(socket.id);
       });
     });
   }
