@@ -43,6 +43,9 @@ class App {
       socket.on(
         'user-connected',
         ({ channelName, username, workspaceName }) => {
+          console.log(
+            `------------------------- username: ${username} workspaceName: ${workspaceName} channelName: ${channelName}`
+          );
           // keep track of newly connected user
           // channel/teammate channel they're in
           // username,
@@ -91,12 +94,20 @@ class App {
         }
       );
       socket.on('channel-message', message => {
-        const { channelName } = JSON.parse(message);
-        socket.to(channelName).broadcast.emit('channel-message', message);
+        const user = this.users.get(socket.id);
+        if (user) {
+          console.log('username: ', user[0], ' channelName: ', user[2]);
+          console.log('message: ', message);
+          // send message to all connected to the channel including sender
+          this.io.in(user[2]).emit('channel-message', message);
+        }
       });
       socket.on('direct-message', message => {
-        const { channelName } = JSON.parse(message);
-        socket.to(channelName).broadcast.emit('direct-message', message);
+        const user = this.users.get(socket.id);
+        if (user) {
+          // send message to all connected to the channel including sender
+          this.io.in(user[2]).emit('direct-message', message);
+        }
       });
       socket.on('user-disconnected', username => {
         const user = this.users.get(socket.id);
