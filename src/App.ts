@@ -8,6 +8,7 @@ import morgan from 'morgan';
 import redis from 'redis';
 import session from 'express-session';
 
+import { UserConnected } from './types';
 import { Controller } from './controllers/types';
 
 const RedisStore = connectRedis(session);
@@ -42,10 +43,7 @@ class App {
     this.io.on('connection', (socket: socketio.Socket) => {
       socket.on(
         'user-connected',
-        ({ channelName, username, workspaceName }) => {
-          console.log(
-            `------------------------- username: ${username} workspaceName: ${workspaceName} channelName: ${channelName}`
-          );
+        ({ channelName, username, workspaceName }: UserConnected) => {
           // keep track of newly connected user
           // channel/teammate channel they're in
           // username,
@@ -58,7 +56,7 @@ class App {
               console.log(`couldn't join room ${workspaceName}: `, err);
             }
             // keep track of the usernames that belong to the same room
-            const usernames: any = [];
+            const usernames: string[] = [];
             // list of socket ids connect to the room
             const socketIds = socket.to(workspaceName).adapter.sids;
             // parse socketIds
@@ -93,23 +91,21 @@ class App {
           });
         }
       );
-      socket.on('channel-message', message => {
+      socket.on('channel-message', (message: string) => {
         const user = this.users.get(socket.id);
         if (user) {
-          console.log('username: ', user[0], ' channelName: ', user[2]);
-          console.log('message: ', message);
           // send message to all connected to the channel including sender
           this.io.in(user[2]).emit('channel-message', message);
         }
       });
-      socket.on('direct-message', message => {
+      socket.on('direct-message', (message: string) => {
         const user = this.users.get(socket.id);
         if (user) {
           // send message to all connected to the channel including sender
           this.io.in(user[2]).emit('direct-message', message);
         }
       });
-      socket.on('user-disconnected', username => {
+      socket.on('user-disconnected', (username: string) => {
         const user = this.users.get(socket.id);
         if (user) {
           // send the username of the user that has disconnected
@@ -119,8 +115,15 @@ class App {
         socket.leaveAll();
       });
       socket.on('disconnect', () => {
+        const user = this.users.get(socket.id);
+        if (user) {
+          // send the username of the user that has disconnected
+          socket.in(user[1]).emit('user-disconnected', user[0]);
+        }
         // remove the user from users map
         this.users.delete(socket.id);
+        // leave both channels
+        socket.leaveAll();
       });
     });
   }
