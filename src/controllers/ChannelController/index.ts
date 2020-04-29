@@ -39,9 +39,12 @@ class ChannelController implements Controller {
 
   public getWorkspaceChannels = async (req: Request, res: Response) => {
     try {
-      const channels = await this.channelRepository.find({
-        where: { workspace: Number(req.query.workspaceId) },
-      });
+      const { userId, workspaceId } = req.query;
+      // query the dd for all channels that belong to a particular workspace
+      // and that that a particular user  as a member
+      const channels = await this.channelRepository.query(
+        `SELECT * FROM channels INNER JOIN channel_members ON channels.id = channel_members.channel and channel_members.user = ${userId} and channels."workspaceId" = ${workspaceId} ORDER BY channels.name;`
+      );
       res.status(200).json({ channels });
     } catch (e) {
       res.json({ error: e });
