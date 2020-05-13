@@ -145,26 +145,36 @@ class App {
     this.app.use(express.json()); // parse application/json in req.body
     this.app.use(morgan('dev')); // logger
     this.app.use(helmet()); // sets up various HTTP headers for security
-    this.app.use(cors()); // enable cors
+    this.app.use(
+      cors({
+        credentials: true, // pass the 'Cookie' header
+        methods: ['GET', 'POST', 'PUT'], // supported http methods
+        origin: 'http://localhost:3000',
+      })
+    ); // enable cors
+    // session + cookie information
     this.app.use(
       session({
-        name: 'stackId',
-        resave: false,
-        saveUninitialized: false,
+        cookie: {
+          httpOnly: true, // default
+          maxAge: 1000 * 60 * 60 * 24 * 365, // 1 year
+          path: '/api',
+          sameSite: 'none',
+          secure: process.env.NODE_ENV === 'production', // set in production
+        },
+        name: 'stackSessionId', // name for the session id cookie
+        resave: false, // only save the session if it was modified during request
+        saveUninitialized: false, // for login session
         secret: 'keyboard_cat', // TODO: move to .env
         store: new RedisStore({ client: redisClient }),
-        cookie: {
-          maxAge: 1000 * 60 * 60 * 24 * 365, // 1 year
-          secure: process.env.NODE_ENV === 'production',
-        },
       })
-    ); // session + cookie information
+    );
   }
 
   // add the routes found in the controllers to the app
   private initializeControllers(controllers: Controller[]): void {
     controllers.forEach(controller => {
-      this.app.use(controller.path, controller.router);
+      this.app.use(`/api${controller.path}`, controller.router);
     });
   }
 }

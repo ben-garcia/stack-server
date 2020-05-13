@@ -73,23 +73,31 @@ class AuthenticationController implements Controller {
         where: { email: req.body.email },
       });
 
-      // if a user is found then compare password
+      // if the user was not found in the db
       if (!user) {
-        throw new Error('User with that email was not found');
+        res.status(404).json({
+          message: 'There is no user with that username/password combination',
+        });
       } else {
+        // if a user is found then compare password
         const match = bcrypt.compare(req.body.password, user.password);
         if (!match) {
-          throw new Error('passwords dont match');
+          res.status(404).json({
+            message: 'There is no user with that username/password combination',
+          });
         }
+
+        // add the user id and username to the session
+        if (req.session && req.method === 'POST') {
+          req.session.userId = user.id;
+          req.session.username = user.username;
+        }
+
+        // don't send the user's password
+        delete user.password;
+
+        res.status(200).json({ user });
       }
-
-      // add the user id to the session
-      req.session!.userId = user.id;
-
-      // don't send the user's password
-      delete user.password;
-
-      res.status(200).json({ user });
     } catch (e) {
       // eslint-disable-next-line
       console.log('Error: ', e);
