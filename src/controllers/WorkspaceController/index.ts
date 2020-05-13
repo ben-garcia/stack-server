@@ -3,6 +3,7 @@ import { getRepository, Repository } from 'typeorm';
 import Joi, { ObjectSchema } from '@hapi/joi';
 
 import { User, Workspace } from '../../entity';
+import { checkUserSession } from '../../middlewares';
 import { Controller } from '../types';
 
 class WorkspaceController implements Controller {
@@ -26,15 +27,19 @@ class WorkspaceController implements Controller {
   }
 
   private initializeRoutes(): void {
-    this.router.get('/', this.getUserWorkspaces);
-    this.router.get('/:workspaceId', this.getWorkspaceTeammates);
-    this.router.post('/', this.createWorkspace);
-    this.router.put('/:workspaceId', this.updateWorkspace);
+    this.router.get('/', checkUserSession, this.getUserWorkspaces);
+    this.router.get(
+      '/:workspaceId',
+      checkUserSession,
+      this.getWorkspaceTeammates
+    );
+    this.router.post('/', checkUserSession, this.createWorkspace);
+    this.router.put('/:workspaceId', checkUserSession, this.updateWorkspace);
   }
 
   public getUserWorkspaces = async (req: Request, res: Response) => {
     try {
-      const { userId } = req.query;
+      const { userId } = req.session!;
 
       // all workspaces that a user is a member
       // which are those that the user has created or have been invited to
@@ -51,6 +56,7 @@ class WorkspaceController implements Controller {
   public getWorkspaceTeammates = async (req: Request, res: Response) => {
     try {
       const { workspaceId } = req.params;
+      // find the workspace in the db
       const workspace = await this.workspaceRepository.findOne({
         where: { id: Number(workspaceId) },
         relations: ['teammates'],
