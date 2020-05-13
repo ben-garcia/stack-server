@@ -3,6 +3,7 @@ import { getRepository, Repository } from 'typeorm';
 import Joi, { ObjectSchema } from '@hapi/joi';
 
 import { DirectMessage, User } from '../../entity';
+import { checkUserSession } from '../../middlewares';
 import { Controller } from '../types';
 
 class DirectMessageController implements Controller {
@@ -27,14 +28,16 @@ class DirectMessageController implements Controller {
   }
 
   private initializeRoutes(): void {
-    this.router.get('/', this.getUserDirectMessages);
-    this.router.post('/', this.createDirectMessage);
+    this.router.get('/', checkUserSession, this.getUserDirectMessages);
+    this.router.post('/', checkUserSession, this.createDirectMessage);
   }
 
   public getUserDirectMessages = async (req: Request, res: Response) => {
     try {
       // get the channel id and workspace id
-      const { userId, teammateId, workspaceId } = req.query;
+      const { teammateId, workspaceId } = req.query;
+      // get the user id
+      const { userId } = req.session!;
       const user = await getRepository(User).findOne({
         where: { id: Number(userId) },
       });

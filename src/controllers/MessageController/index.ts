@@ -3,6 +3,7 @@ import { getRepository, Repository } from 'typeorm';
 import Joi, { ObjectSchema } from '@hapi/joi';
 
 import { Channel, Message, User } from '../../entity';
+import { checkUserSession } from '../../middlewares';
 import { Controller } from '../types';
 
 class MessageController implements Controller {
@@ -27,8 +28,8 @@ class MessageController implements Controller {
   }
 
   private initializeRoutes(): void {
-    this.router.get('/', this.getChannelMessages);
-    this.router.post('/', this.createMessage);
+    this.router.get('/', checkUserSession, this.getChannelMessages);
+    this.router.post('/', checkUserSession, this.createMessage);
   }
 
   public getChannelMessages = async (req: Request, res: Response) => {

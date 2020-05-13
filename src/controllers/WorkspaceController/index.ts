@@ -82,9 +82,6 @@ class WorkspaceController implements Controller {
       // verify that the workspace being created matches schema.
       const validatedWorkspace = await this.schema.validateAsync(req.body);
 
-      // TODO: get the ownerId from session
-      // for now its ok since I am using POSTman
-      // get the user from the db
       const user = await getRepository(User).findOne({
         id: Number(validatedWorkspace.owner),
       });

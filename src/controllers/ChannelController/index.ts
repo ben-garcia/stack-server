@@ -3,6 +3,7 @@ import { getRepository, Repository } from 'typeorm';
 import Joi, { ObjectSchema } from '@hapi/joi';
 
 import { Channel, User, Workspace } from '../../entity';
+import { checkUserSession } from '../../middlewares';
 import { Controller } from '../types';
 
 class ChannelController implements Controller {
@@ -31,15 +32,17 @@ class ChannelController implements Controller {
   }
 
   private initializeRoutes(): void {
-    this.router.get('/', this.getWorkspaceChannels);
-    this.router.get('/:channelId', this.getChannelMembers);
-    this.router.post('/', this.createChannel);
-    this.router.put('/:channelId', this.updateChannel);
+    this.router.get('/', checkUserSession, this.getWorkspaceChannels);
+    this.router.get('/:channelId', checkUserSession, this.getChannelMembers);
+    this.router.post('/', checkUserSession, this.createChannel);
+    this.router.put('/:channelId', checkUserSession, this.updateChannel);
   }
 
   public getWorkspaceChannels = async (req: Request, res: Response) => {
     try {
-      const { userId, workspaceId } = req.query;
+      const { workspaceId } = req.query;
+      // get the userId from the session
+      const { userId } = req.session!;
       // query the dd for all channels that belong to a particular workspace
       // and that that a particular user  as a member
       const channels = await this.channelRepository.query(
@@ -90,7 +93,7 @@ class ChannelController implements Controller {
         req.body.channel
       );
       // get the user id
-      const { userId } = req.body;
+      const { userId } = req.session!;
       // store the users to add as members
       const members: User[] = [];
 
@@ -118,9 +121,6 @@ class ChannelController implements Controller {
         });
       }
 
-      // TODO: get the ownerId from session
-      // for now its ok since I am using POSTman
-      // get the user from the db
       const workspace = await getRepository(Workspace).findOne({
         id: Number(validatedChannel.workspace),
       });
