@@ -149,7 +149,7 @@ class App {
       cors({
         credentials: true, // pass the 'Cookie' header
         methods: ['GET', 'POST', 'PUT'], // supported http methods
-        origin: 'http://localhost:3000',
+        origin: 'http://localhost:3000', // TODO set env variable
       })
     ); // enable cors
     // session + cookie information
