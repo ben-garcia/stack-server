@@ -1,33 +1,36 @@
-import express, { Request, Response, Router } from 'express';
-import { getRepository, Repository } from 'typeorm';
 import Joi, { ObjectSchema } from '@hapi/joi';
+import express, { Request, Response, Router } from 'express';
+import redis, { RedisClient } from 'redis';
+import { getRepository, Repository } from 'typeorm';
 
 import { User, Workspace } from '../../entity';
-import { checkUserSession } from '../../middlewares';
+import { checkRedis, checkUserSession } from '../../middlewares';
 import { Controller } from '../types';
 
 class WorkspaceController implements Controller {
+  public redisClient: RedisClient;
   public path: string;
   public router: Router;
-  public workspaceRepository: Repository<Workspace>;
   public schema: ObjectSchema;
+  public workspaceRepository: Repository<Workspace>;
 
   constructor() {
+    this.redisClient = redis.createClient({ auth_pass: 'ben' });
     this.path = '/workspaces';
     this.router = express.Router();
-    this.workspaceRepository = getRepository(Workspace);
     this.schema = Joi.object({
       name: Joi.string()
         .trim()
         .required(),
       owner: Joi.number(),
     });
+    this.workspaceRepository = getRepository(Workspace);
 
     this.initializeRoutes();
   }
 
   private initializeRoutes(): void {
-    this.router.get('/', checkUserSession, this.getUserWorkspaces);
+    this.router.get('/', checkUserSession, checkRedis, this.getUserWorkspaces);
     this.router.get(
       '/:workspaceId',
       checkUserSession,
@@ -39,13 +42,23 @@ class WorkspaceController implements Controller {
 
   public getUserWorkspaces = async (req: Request, res: Response) => {
     try {
-      const { userId } = req.session!;
+      const { userId, username } = req.session!;
 
       // all workspaces that a user is a member
       // which are those that the user has created or have been invited to
       const workspaces = await this.workspaceRepository.query(
         `SELECT workspaces.id, workspaces.name, workspaces."ownerId" FROM workspaces INNER JOIN user_workspaces ON workspaces.id = user_workspaces.workspace INNER JOIN users ON user_workspaces.user = users.id and users.id = ${userId}`
       );
+
+      // make sure that the user has at least 1 workspace
+      if (workspaces.length > 0) {
+        // save to Redis with a 1 hour expiration
+        this.redisClient.setex(
+          `user:${userId}-${username}:workspaces`,
+          1000 * 60 * 60,
+          JSON.stringify(workspaces)
+        );
+      }
 
       res.status(200).json({ workspaces });
     } catch (e) {
