@@ -34,6 +34,7 @@ class WorkspaceController implements Controller {
     this.router.get(
       '/:workspaceId',
       checkUserSession,
+      checkRedis,
       this.getWorkspaceTeammates
     );
     this.router.post('/', checkUserSession, this.createWorkspace);
@@ -55,7 +56,7 @@ class WorkspaceController implements Controller {
         // save to Redis with a 1 hour expiration
         this.redisClient.setex(
           `user:${userId}-${username}:workspaces`,
-          1000 * 60 * 60,
+          60 * 60,
           JSON.stringify(workspaces)
         );
       }
@@ -81,6 +82,17 @@ class WorkspaceController implements Controller {
         teammates.push({ id: m.id, username: m.username });
       });
 
+      if (teammates.length > 0) {
+        // having passed userSession middleware
+        const { userId, username } = req.session!;
+        // save to Redis with a 1 hour expiration
+        this.redisClient.setex(
+          `user:${userId}-${username}:teammates`,
+          60 * 60,
+          JSON.stringify(teammates)
+        );
+      }
+
       res.status(200).json({
         message: 'Workspace teammates found',
         teammates,
@@ -94,11 +106,11 @@ class WorkspaceController implements Controller {
     try {
       // verify that the workspace being created matches schema.
       const validatedWorkspace = await this.schema.validateAsync(req.body);
-
       const user = await getRepository(User).findOne({
         id: Number(validatedWorkspace.owner),
       });
       let workspace;
+      const { userId, username } = req.session!;
 
       if (user) {
         // if no errors then add the record
@@ -115,6 +127,10 @@ class WorkspaceController implements Controller {
         delete workspace.teammates;
       }
 
+      // Having added a another workspace, delete workspaces from Redis
+      // which will cause the server to qeury the db for the updated list
+      this.redisClient.del(`user:${userId}-${username}:workspaces`);
+
       res.status(201).json({ message: 'Workspace Created', workspace });
     } catch (e) {
       res.status(409).json({ error: e });
@@ -123,6 +139,7 @@ class WorkspaceController implements Controller {
 
   public updateWorkspace = async (req: Request, res: Response) => {
     try {
+      const { userId, username } = req.session!;
       const { workspaceId } = req.params;
       // list of users that have been validated
       const teammates: User[] = [];
@@ -140,9 +157,9 @@ class WorkspaceController implements Controller {
       const usernames = Object.values(req.body);
       let user: User | undefined;
 
-      usernames.forEach(async (username, i) => {
+      usernames.forEach(async (u, i) => {
         // query the db for the user with username
-        user = await getRepository(User).findOne({ where: { username } });
+        user = await getRepository(User).findOne({ where: { username: u } });
 
         if (user) {
           // don't send user's password to the client
@@ -151,7 +168,7 @@ class WorkspaceController implements Controller {
           teammates.push(user);
         } else {
           // user doesn't exits
-          invalidUsernames.push(username as string);
+          invalidUsernames.push(u as string);
         }
 
         // when the loop reaches the last username
@@ -192,6 +209,9 @@ class WorkspaceController implements Controller {
           }
         }
       });
+      // Having added a another workspace, delete workspaces from Redis
+      // which will cause the server to qeury the db for the updated list
+      this.redisClient.del(`user:${userId}-${username}:teammates`);
     } catch (e) {
       res.status(409).json({ req, error: e });
     }

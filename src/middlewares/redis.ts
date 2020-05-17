@@ -13,6 +13,7 @@ const checkRedis = (req: Request, res: Response, next: NextFunction) => {
   const resourceName = req.baseUrl.split('/')[2];
   // having passed the userSession middleware
   const { userId, username } = req.session!;
+  const { params } = req;
   const redisKey = `user:${userId}-${username}:${resourceName}`;
 
   client.exists(redisKey, (err, result) => {
@@ -21,7 +22,7 @@ const checkRedis = (req: Request, res: Response, next: NextFunction) => {
       // eslint-disable-next-line
       console.log('err inside client.exists: ', err);
     }
-    if (result) {
+    if (result && !params) {
       client.get(redisKey, (error, resource) => {
         if (error) {
           // eslint-disable-next-line
