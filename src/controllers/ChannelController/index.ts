@@ -1,19 +1,22 @@
-import express, { Request, Response, Router } from 'express';
-import { getRepository, Repository } from 'typeorm';
 import Joi, { ObjectSchema } from '@hapi/joi';
+import express, { Request, Response, Router } from 'express';
+import redis, { RedisClient } from 'redis';
+import { getRepository, Repository } from 'typeorm';
 
 import { Channel, User, Workspace } from '../../entity';
-import { checkUserSession } from '../../middlewares';
+import { checkRedis, checkUserSession } from '../../middlewares';
 import { Controller } from '../types';
 
 class ChannelController implements Controller {
-  public path: string;
-  public router: Router;
   public channelRepository: Repository<Channel>;
+  public path: string;
+  public redisClient: RedisClient;
+  public router: Router;
   public schema: ObjectSchema;
 
   constructor() {
     this.path = '/channels';
+    this.redisClient = redis.createClient({ auth_pass: 'ben' });
     this.router = express.Router();
     this.channelRepository = getRepository(Channel);
     this.schema = Joi.object({
@@ -32,8 +35,18 @@ class ChannelController implements Controller {
   }
 
   private initializeRoutes(): void {
-    this.router.get('/', checkUserSession, this.getWorkspaceChannels);
-    this.router.get('/:channelId', checkUserSession, this.getChannelMembers);
+    this.router.get(
+      '/',
+      checkUserSession,
+      checkRedis,
+      this.getWorkspaceChannels
+    );
+    this.router.get(
+      '/:channelId',
+      checkUserSession,
+      checkRedis,
+      this.getChannelMembers
+    );
     this.router.post('/', checkUserSession, this.createChannel);
     this.router.put('/:channelId', checkUserSession, this.updateChannel);
   }
@@ -42,12 +55,23 @@ class ChannelController implements Controller {
     try {
       const { workspaceId } = req.query;
       // get the userId from the session
-      const { userId } = req.session!;
+      const { userId, username } = req.session!;
       // query the dd for all channels that belong to a particular workspace
       // and that that a particular user  as a member
       const channels = await this.channelRepository.query(
         `SELECT * FROM channels INNER JOIN channel_members ON channels.id = channel_members.channel and channel_members.user = ${userId} and channels."workspaceId" = ${workspaceId} ORDER BY channels.name;`
       );
+
+      // make sure that the user has at least 1 channel
+      if (channels.length > 0) {
+        // save to Redis with a 1 hour expiration
+        this.redisClient.setex(
+          `user:${userId}-${username}:channels`,
+          60 * 60,
+          JSON.stringify(channels)
+        );
+      }
+
       res.status(200).json({ channels });
     } catch (e) {
       res.json({ error: e });
@@ -76,6 +100,17 @@ class ChannelController implements Controller {
         delete m.updatedAt;
       });
 
+      if (channel?.members!.length > 0) {
+        // having passed userSession middleware
+        const { userId, username } = req.session!;
+        // save to Redis with a 1 hour expiration
+        this.redisClient.setex(
+          `user:${userId}-${username}:members`,
+          60 * 60,
+          JSON.stringify(channel?.members)
+        );
+      }
+
       // send members to the client
       res.status(200).json({ members: channel?.members });
     } catch (e) {
@@ -93,7 +128,7 @@ class ChannelController implements Controller {
         req.body.channel
       );
       // get the user id
-      const { userId } = req.session!;
+      const { userId, username } = req.session!;
       // store the users to add as members
       const members: User[] = [];
 
@@ -107,10 +142,10 @@ class ChannelController implements Controller {
       // only query the db if there is at least 2 members(including the user)
       // and channel should be set to public
       if (req.body.channel.members?.length > 1 && !validatedChannel.private) {
-        req.body.channel.members.forEach(async (username: string) => {
+        req.body.channel.members.forEach(async (u: string) => {
           // query the db for the username
           const newMember = await getRepository(User).findOne({
-            username,
+            username: u,
           });
 
           // if there is record,
@@ -142,6 +177,10 @@ class ChannelController implements Controller {
         // remove the members before sending to the client
         delete channel?.members;
 
+        // Having added a another channel, delete channels from Redis
+        // which will cause the server to qeury the db for the updated list
+        this.redisClient.del(`user:${userId}-${username}:channels`);
+
         res.status(201).json({ message: 'Channel Created', channel });
       }
     } catch (e) {
@@ -153,6 +192,7 @@ class ChannelController implements Controller {
 
   public updateChannel = async (req: Request, res: Response) => {
     try {
+      const { userId, username } = req.session!;
       const { channelId } = req.params;
 
       if (
@@ -165,9 +205,9 @@ class ChannelController implements Controller {
         // loop through the members passed in the body of the request object
         // and query the db for each user and
         // add it to the array of new members
-        req.body.members.forEach(async (username: string) => {
+        req.body.members.forEach(async (u: string) => {
           const user = await getRepository(User).findOne({
-            where: { username },
+            where: { username: u },
           });
 
           // make sure there a user in the db
@@ -200,6 +240,9 @@ class ChannelController implements Controller {
         // something has gone wrong
         res.status(400).json({ message: 'Something went wrong' });
       }
+      // Having updated a channel, delete channels from Redis
+      // which will cause the server to qeury the db for the updated list
+      this.redisClient.del(`user:${userId}-${username}:channels`);
     } catch (e) {
       // eslint-disable-next-line
       console.log('ChannelController updateChannel error: ', e);

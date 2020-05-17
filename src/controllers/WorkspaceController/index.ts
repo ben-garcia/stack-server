@@ -8,15 +8,15 @@ import { checkRedis, checkUserSession } from '../../middlewares';
 import { Controller } from '../types';
 
 class WorkspaceController implements Controller {
-  public redisClient: RedisClient;
   public path: string;
+  public redisClient: RedisClient;
   public router: Router;
   public schema: ObjectSchema;
   public workspaceRepository: Repository<Workspace>;
 
   constructor() {
-    this.redisClient = redis.createClient({ auth_pass: 'ben' });
     this.path = '/workspaces';
+    this.redisClient = redis.createClient({ auth_pass: 'ben' });
     this.router = express.Router();
     this.schema = Joi.object({
       name: Joi.string()
@@ -44,7 +44,6 @@ class WorkspaceController implements Controller {
   public getUserWorkspaces = async (req: Request, res: Response) => {
     try {
       const { userId, username } = req.session!;
-
       // all workspaces that a user is a member
       // which are those that the user has created or have been invited to
       const workspaces = await this.workspaceRepository.query(
