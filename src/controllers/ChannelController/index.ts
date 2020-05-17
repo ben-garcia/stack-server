@@ -54,7 +54,7 @@ class ChannelController implements Controller {
   public getWorkspaceChannels = async (req: Request, res: Response) => {
     try {
       const { workspaceId } = req.query;
-      // get the userId from the session
+      // get session properties
       const { userId, username } = req.session!;
       // query the dd for all channels that belong to a particular workspace
       // and that that a particular user  as a member

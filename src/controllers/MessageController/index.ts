@@ -1,21 +1,24 @@
-import express, { Request, Response, Router } from 'express';
-import { getRepository, Repository } from 'typeorm';
 import Joi, { ObjectSchema } from '@hapi/joi';
+import express, { Request, Response, Router } from 'express';
+import redis, { RedisClient } from 'redis';
+import { getRepository, Repository } from 'typeorm';
 
 import { Channel, Message, User } from '../../entity';
-import { checkUserSession } from '../../middlewares';
+import { checkRedis, checkUserSession } from '../../middlewares';
 import { Controller } from '../types';
 
 class MessageController implements Controller {
-  public path: string;
-  public router: Router;
   public messageRepository: Repository<Message>;
+  public path: string;
+  public redisClient: RedisClient;
+  public router: Router;
   public schema: ObjectSchema;
 
   constructor() {
-    this.path = '/messages';
-    this.router = express.Router();
     this.messageRepository = getRepository(Message);
+    this.path = '/messages';
+    this.redisClient = redis.createClient({ auth_pass: 'ben' });
+    this.router = express.Router();
     this.schema = Joi.object({
       content: Joi.string()
         .trim()
@@ -28,7 +31,7 @@ class MessageController implements Controller {
   }
 
   private initializeRoutes(): void {
-    this.router.get('/', checkUserSession, this.getChannelMessages);
+    this.router.get('/', checkUserSession, checkRedis, this.getChannelMessages);
     this.router.post('/', checkUserSession, this.createMessage);
   }
 
@@ -36,6 +39,7 @@ class MessageController implements Controller {
     try {
       // get the channel id passed in as a parameter
       const { channelId } = req.query;
+      const { userId, username } = req.session!;
       // get the correct channel from the db
       const messages = await this.messageRepository.find({
         where: { channel: Number(channelId) },
@@ -56,6 +60,16 @@ class MessageController implements Controller {
         delete m.user.updatedAt;
       });
 
+      // make sure that the user has at least 1 channel
+      if (messages.length > 0) {
+        // save to Redis with a 1 hour expiration
+        this.redisClient.setex(
+          `user:${userId}-${username}:messages`,
+          60 * 60,
+          JSON.stringify(messages)
+        );
+      }
+
       // send messages to the client
       res.status(200).json({ messages });
     } catch (e) {
@@ -72,6 +86,7 @@ class MessageController implements Controller {
       const validatedMessage = await this.schema.validateAsync(
         req.body.message
       );
+      const { userId: sessionUserId, username } = req.session!;
       const { channel: channelId, user: userId } = req.body.message;
       // get the channel to add the message
       const channel = await getRepository(Channel).findOne({
@@ -101,6 +116,10 @@ class MessageController implements Controller {
         delete message.user;
         //  remove the channel before sending to the client
         delete message.channel;
+
+        // Having added a another message, delete messages from Redis
+        // which will cause the server to qeury the db for the updated list
+        this.redisClient.del(`user:${sessionUserId}-${username}:messages`);
 
         res.status(201).json({
           success: 'Message Created',
