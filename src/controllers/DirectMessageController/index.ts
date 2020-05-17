@@ -1,21 +1,24 @@
-import express, { Request, Response, Router } from 'express';
-import { getRepository, Repository } from 'typeorm';
 import Joi, { ObjectSchema } from '@hapi/joi';
+import express, { Request, Response, Router } from 'express';
+import redis, { RedisClient } from 'redis';
+import { getRepository, Repository } from 'typeorm';
 
 import { DirectMessage, User } from '../../entity';
-import { checkUserSession } from '../../middlewares';
+import { checkRedis, checkUserSession } from '../../middlewares';
 import { Controller } from '../types';
 
 class DirectMessageController implements Controller {
-  public path: string;
-  public router: Router;
   public directMessageRepository: Repository<DirectMessage>;
+  public path: string;
+  public redisClient: RedisClient;
+  public router: Router;
   public schema: ObjectSchema;
 
   constructor() {
-    this.path = '/direct-messages';
-    this.router = express.Router();
     this.directMessageRepository = getRepository(DirectMessage);
+    this.path = '/direct-messages';
+    this.redisClient = redis.createClient({ auth_pass: 'ben' });
+    this.router = express.Router();
     this.schema = Joi.object({
       content: Joi.string()
         .trim()
@@ -28,7 +31,12 @@ class DirectMessageController implements Controller {
   }
 
   private initializeRoutes(): void {
-    this.router.get('/', checkUserSession, this.getUserDirectMessages);
+    this.router.get(
+      '/',
+      checkUserSession,
+      checkRedis,
+      this.getUserDirectMessages
+    );
     this.router.post('/', checkUserSession, this.createDirectMessage);
   }
 
@@ -36,8 +44,7 @@ class DirectMessageController implements Controller {
     try {
       // get the channel id and workspace id
       const { teammateId, workspaceId } = req.query;
-      // get the user id
-      const { userId } = req.session!;
+      const { userId, username } = req.session!;
       const user = await getRepository(User).findOne({
         where: { id: Number(userId) },
       });
@@ -72,6 +79,15 @@ class DirectMessageController implements Controller {
           delete m.user.updatedAt;
         });
 
+        // make sure that the user has at least 1 direct message with teammate
+        if (directMessages.length > 0) {
+          // save to Redis with a 1 hour expiration
+          this.redisClient.setex(
+            `user:${userId}-${username}:directMessages`,
+            60 * 60,
+            JSON.stringify(directMessages)
+          );
+        }
         // send messages to the client
         res.status(200).json({ directMessages });
       } else {
@@ -91,6 +107,7 @@ class DirectMessageController implements Controller {
       const validatedDirectMessage = await this.schema.validateAsync(
         req.body.message
       );
+      const { userId: sessionUserId, username } = req.session!;
       const { user: userId, workspaceId } = req.body.message;
       // get the user who created the message from the db
       const user = await getRepository(User).findOne({
@@ -111,6 +128,12 @@ class DirectMessageController implements Controller {
 
         //  remove the user before sending it
         delete directMessage.user;
+
+        // Having added a another direct message, delete directMessages from Redis
+        // which will cause the server to qeury the db for the updated list
+        this.redisClient.del(
+          `user:${sessionUserId}-${username}:directMessages`
+        );
 
         res.status(201).json({
           success: 'Direct Message Created',
