@@ -38,6 +38,7 @@ class AuthenticationController implements Controller {
   private initializeRoutes(): void {
     this.router.post('/register', this.registerUser);
     this.router.post('/login', this.loginUser);
+    this.router.post('/logout', this.logoutUser);
   }
 
   public registerUser = async (req: Request, res: Response) => {
@@ -105,6 +106,20 @@ class AuthenticationController implements Controller {
         .status(409)
         .json({ error: 'No user with that email/password combination' });
     }
+  };
+
+  public logoutUser = (req: Request, res: Response) => {
+    const { username } = req.session!;
+    req.session!.destroy(err => {
+      if (err) {
+        // eslint-disable-next-line
+        console.log('err in logoutUser: ', err);
+      } else {
+        res
+          .status(200)
+          .json({ message: `${username} logged out successfully` });
+      }
+    });
   };
 }
 
