@@ -1,5 +1,4 @@
 import 'reflect-metadata';
-import { createConnection } from 'typeorm';
 
 import App from './App';
 import {
@@ -9,10 +8,11 @@ import {
   MessageController,
   WorkspaceController,
 } from './controllers';
+import { createTypeormConnection } from './utils';
 
 (async () => {
   try {
-    await createConnection(); // create a single connection
+    await createTypeormConnection(); //
   } catch (error) {
     // eslint-disable-next-line no-console
     console.log('Error while connecting to the database', error);

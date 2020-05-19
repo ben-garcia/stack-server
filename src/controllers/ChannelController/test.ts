@@ -34,6 +34,7 @@ describe('ChannelController', () => {
       body: {
         channel: {},
       },
+      session: { userId: 1, username: '' },
     };
     const mockResponse = {
       status: jest.fn().mockReturnThis(),

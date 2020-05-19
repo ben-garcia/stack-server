@@ -34,6 +34,7 @@ describe('MessageController', () => {
       body: {
         message: {},
       },
+      session: { userId: 1, username: '' },
     };
     const mockResponse = {
       status: jest.fn().mockReturnThis(),
