@@ -20,6 +20,7 @@ class AuthenticationController implements Controller {
       username: Joi.string()
         .trim()
         .alphanum()
+        .min(6)
         .required(),
       password: Joi.string()
         .trim()
@@ -48,23 +49,30 @@ class AuthenticationController implements Controller {
       // check for any records that match req.body
       // if any record is found matching either email or username
       // then send detailed error message.
-      await this.userRepository.findOne({
+      const user = await this.userRepository.findOne({
         email: req.body.email,
         username: req.body.username,
       });
+      if (user) {
+        // if there is a user with the username
+        // send error
+        res
+          .status(409)
+          .json({ error: 'User with that username already exists' });
+      } else {
+        // create a new record in the db.
+        await this.userRepository
+          .create({
+            email: validatedUser.email,
+            password: validatedUser.password,
+            username: validatedUser.username,
+          })
+          .save();
 
-      // create a new record in the db.
-      await this.userRepository
-        .create({
-          email: validatedUser.email,
-          password: validatedUser.password,
-          username: validatedUser.username,
-        })
-        .save();
-
-      res.status(201).json({ status: 'User Created' });
+        res.status(201).json({ message: 'User Created' });
+      }
     } catch (e) {
-      res.status(409).json({ error: e.detail });
+      res.status(400).json({ error: e.details });
     }
   };
 

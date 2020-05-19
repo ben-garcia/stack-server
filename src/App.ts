@@ -19,7 +19,7 @@ const redisClient = redis.createClient({
 });
 
 class App {
-  private app: Application;
+  public app: Application;
   private server: http.Server;
   private io: socketio.Server;
   // users with be store as:

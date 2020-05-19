@@ -127,6 +127,7 @@ class ChannelController implements Controller {
       const validatedChannel = await this.schema.validateAsync(
         req.body.channel
       );
+
       // get the user id
       const { userId, username } = req.session!;
       // store the users to add as members
@@ -157,7 +158,7 @@ class ChannelController implements Controller {
       }
 
       const workspace = await getRepository(Workspace).findOne({
-        id: Number(validatedChannel.workspace),
+        id: Number(validatedChannel?.workspace),
       });
 
       if (workspace) {
