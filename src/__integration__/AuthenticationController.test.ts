@@ -145,4 +145,76 @@ describe('AuthenticationControler Integration', () => {
         });
     });
   });
+
+  describe('login user', () => {
+    it('successful', done => {
+      request(app.app)
+        .post('/api/auth/login')
+        .send(registerUser)
+        .set('Accept', 'application/json')
+        .expect('Content-Type', /json/)
+        .expect(200)
+        .then(async (response: Response) => {
+          const { user } = response.body;
+          const setCookie = response.header['set-cookie'][0];
+          expect(user.id).toBeDefined();
+          expect(user.email).toBe(registerUser.email);
+          expect(user.username).toBe(registerUser.username);
+          expect(user.createdAt).toBeDefined();
+          expect(user.updatedAt).toBeDefined();
+          // check server doesnn't send user.password
+          expect(user.password).not.toBeDefined();
+          // check session cookie
+          expect(setCookie).toMatch(/stackSessionId/);
+          try {
+            const dbUser = await User.findOne({
+              username: registerUser.username,
+            });
+            expect(dbUser!).toBeDefined();
+            // check user the server sends back
+            // with the user in the db
+            expect(dbUser!.id).toBe(user.id);
+            expect(dbUser!.username).toBe(user.username);
+            expect(dbUser!.email).toBe(user.email);
+            done();
+          } catch (e) {
+            done(e);
+          }
+        });
+    });
+
+    it('should return 404 for duplicate user with same email', () => {
+      request(app.app)
+        .post('/api/auth/login')
+        .send({ ...registerUser, email: 'username123@example.com' })
+        .set('Accept', 'application/json')
+        .expect('Content-Type', /json/)
+        .expect(404)
+        .then((response: Response) => {
+          const { error } = response.body;
+          const setCookie = response.header['set-cookie'];
+          expect(error).toBe(
+            'There is no user with that email/password combination'
+          );
+          expect(setCookie).not.toBeDefined();
+        });
+    });
+
+    it('should return 404 when password dont match', () => {
+      request(app.app)
+        .post('/api/auth/login')
+        .send({ ...registerUser, password: 'password123' })
+        .set('Accept', 'application/json')
+        .expect('Content-Type', /json/)
+        .expect(404)
+        .then((response: Response) => {
+          const { error } = response.body;
+          const setCookie = response.header['set-cookie'];
+          expect(error).toBe(
+            'There is no user with that email/password combination'
+          );
+          expect(setCookie).not.toBeDefined();
+        });
+    });
+  });
 });
