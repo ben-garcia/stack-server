@@ -1,14 +1,6 @@
 // eslint-disable-next-line
 import request, { Response } from 'supertest';
 
-import App from '../App';
-import {
-  AuthenticationController,
-  ChannelController,
-  DirectMessageController,
-  MessageController,
-  WorkspaceController,
-} from '../controllers';
 import {
   registerUser,
   registerUserWithInvalidEmail,
@@ -16,20 +8,13 @@ import {
   registerUserWithInvalidUsername,
 } from './fixtures';
 import { User } from '../entity';
-import { createTypeormConnection } from '../utils';
-
-let app: App;
+import { testSetup } from '../utils';
+import App from '../App';
 
 describe('AuthenticationControler Integration', () => {
+  let app: App;
   beforeAll(async () => {
-    await createTypeormConnection();
-    app = new App([
-      new AuthenticationController(),
-      new ChannelController(),
-      new DirectMessageController(),
-      new MessageController(),
-      new WorkspaceController(),
-    ]);
+    app = await testSetup();
   });
 
   describe('register user', () => {
