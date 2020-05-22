@@ -1,3 +1,4 @@
+import { Application } from 'express';
 // eslint-disable-next-line
 import request, { Response } from 'supertest';
 
@@ -8,18 +9,37 @@ import {
   registerUserWithInvalidUsername,
 } from './fixtures';
 import { User } from '../entity';
-import { testSetup } from '../utils';
-import App from '../App';
+import { closeTestDatabase, connectToTestDatabase } from '../utils';
 
 describe('AuthenticationControler Integration', () => {
-  let app: App;
-  beforeAll(async () => {
-    app = await testSetup();
+  let app: Application;
+
+  beforeAll(async done => {
+    try {
+      app = await connectToTestDatabase();
+      done();
+    } catch (e) {
+      done(e);
+    }
+  });
+
+  afterEach(async done => {
+    try {
+      await User.query('DELETE FROM users');
+      done();
+    } catch (e) {
+      done(e);
+    }
+  });
+
+  afterAll(async done => {
+    await closeTestDatabase();
+    done();
   });
 
   describe('register user', () => {
     it('successful', done => {
-      request(app.app)
+      request(app)
         .post('/api/auth/register')
         .send(registerUser)
         .set('Accept', 'application/json')
@@ -34,18 +54,18 @@ describe('AuthenticationControler Integration', () => {
           } catch (e) {
             done(e);
           }
-        });
+        })
+        .catch(e => done(e));
     });
 
-    it('should save to db if there is already a user with same username', async done => {
+    it('should not save to db if there is already a user with same username', async done => {
       try {
-        const users = await User.find({ username: registerUser.username });
-        expect(users.length).toBe(1);
+        await User.create(registerUser).save();
         done();
       } catch (e) {
         done(e);
       }
-      request(app.app)
+      request(app)
         .post('/api/auth/register')
         .send(registerUser)
         .set('Accept', 'application/json')
@@ -60,11 +80,38 @@ describe('AuthenticationControler Integration', () => {
           } catch (e) {
             done(e);
           }
-        });
+        })
+        .catch(e => done(e));
+    });
+
+    it('should not save to the db if there is already a user with same email', async done => {
+      try {
+        await User.create(registerUser).save();
+        done();
+      } catch (e) {
+        done(e);
+      }
+      request(app)
+        .post('/api/auth/register')
+        .send(registerUser)
+        .set('Accept', 'application/json')
+        .expect('Content-Type', /json/)
+        .expect(409)
+        .then(async ({ body: { error } }: Response) => {
+          try {
+            expect(error).toBe('User with that username already exists');
+            const users = await User.find({ username: registerUser.username });
+            expect(users.length).toBe(1);
+            done();
+          } catch (e) {
+            done(e);
+          }
+        })
+        .catch(e => done(e));
     });
 
     it('should not save db if username.length < 6', done => {
-      request(app.app)
+      request(app)
         .post('/api/auth/register')
         .send(registerUserWithInvalidUsername)
         .set('Accept', 'application/json')
@@ -83,11 +130,12 @@ describe('AuthenticationControler Integration', () => {
           } catch (e) {
             done(e);
           }
-        });
+        })
+        .catch(e => done(e));
     });
 
     it('should not save to db if password does not match pattern', done => {
-      request(app.app)
+      request(app)
         .post('/api/auth/register')
         .send(registerUserWithInvalidPassword)
         .set('Accept', 'application/json')
@@ -106,11 +154,12 @@ describe('AuthenticationControler Integration', () => {
           } catch (e) {
             done(e);
           }
-        });
+        })
+        .catch(e => done(e));
     });
 
     it('should not save to db if email is invalid', done => {
-      request(app.app)
+      request(app)
         .post('/api/auth/register')
         .send(registerUserWithInvalidEmail)
         .set('Accept', 'application/json')
@@ -127,13 +176,20 @@ describe('AuthenticationControler Integration', () => {
           } catch (e) {
             done(e);
           }
-        });
+        })
+        .catch(e => done(e));
     });
   });
 
   describe('login user', () => {
-    it('successful', done => {
-      request(app.app)
+    it('successful', async done => {
+      try {
+        await User.create(registerUser).save();
+        done();
+      } catch (e) {
+        done(e);
+      }
+      request(app)
         .post('/api/auth/login')
         .send(registerUser)
         .set('Accept', 'application/json')
@@ -165,28 +221,12 @@ describe('AuthenticationControler Integration', () => {
           } catch (e) {
             done(e);
           }
-        });
+        })
+        .catch(e => done(e));
     });
 
-    it('should return 404 for duplicate user with same email', () => {
-      request(app.app)
-        .post('/api/auth/login')
-        .send({ ...registerUser, email: 'username123@example.com' })
-        .set('Accept', 'application/json')
-        .expect('Content-Type', /json/)
-        .expect(404)
-        .then((response: Response) => {
-          const { error } = response.body;
-          const setCookie = response.header['set-cookie'];
-          expect(error).toBe(
-            'There is no user with that email/password combination'
-          );
-          expect(setCookie).not.toBeDefined();
-        });
-    });
-
-    it('should return 404 when password dont match', () => {
-      request(app.app)
+    it('should return 404 when passwords dont match', done => {
+      request(app)
         .post('/api/auth/login')
         .send({ ...registerUser, password: 'password123' })
         .set('Accept', 'application/json')
@@ -199,7 +239,9 @@ describe('AuthenticationControler Integration', () => {
             'There is no user with that email/password combination'
           );
           expect(setCookie).not.toBeDefined();
-        });
+          done();
+        })
+        .catch(e => done(e));
     });
   });
 });

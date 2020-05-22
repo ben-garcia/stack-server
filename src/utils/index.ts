@@ -1,5 +1,4 @@
 import createTypeormConnection from './createTypeormConnection';
-import testSetup from './testSetup';
+import { closeTestDatabase, connectToTestDatabase } from './testSetup';
 
-// eslint-disable-next-line
-export { createTypeormConnection, testSetup };
+export { createTypeormConnection, closeTestDatabase, connectToTestDatabase };

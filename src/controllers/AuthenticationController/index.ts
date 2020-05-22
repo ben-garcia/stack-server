@@ -110,8 +110,9 @@ class AuthenticationController implements Controller {
         }
       }
     } catch (e) {
+      // getting error when running unit test
       // eslint-disable-next-line
-      console.log('Error: ', e);
+      // console.log('loginUser error: ', e);
       res
         .status(409)
         .json({ error: 'No user with that email/password combination' });
