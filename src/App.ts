@@ -12,11 +12,15 @@ import { UserConnected } from './types';
 import { Controller } from './controllers/types';
 
 const RedisStore = connectRedis(session);
-const redisClient = redis.createClient({
-  host: '127.0.0.1',
-  port: 6379,
-  auth_pass: 'ben',
-});
+const redisOptions =
+  process.env.NODE_ENV !== 'production'
+    ? {
+        host: '127.0.0.1',
+        port: 6379,
+        auth_pass: 'ben',
+      }
+    : { url: process.env.REDIS_URL };
+const redisClient = redis.createClient(redisOptions);
 
 class App {
   public app: Application;
@@ -149,7 +153,10 @@ class App {
       cors({
         credentials: true, // pass the 'Cookie' header
         methods: ['GET', 'POST', 'PUT'], // supported http methods
-        origin: 'http://localhost:3000', // TODO set env variable
+        origin:
+          process.env.NODE_ENV !== 'production'
+            ? 'http://localhost:3000'
+            : process.env.CLIENT_URL,
       })
     ); // enable cors
     // session + cookie information
@@ -165,7 +172,10 @@ class App {
         name: 'stackSessionId', // name for the session id cookie
         resave: false, // only save the session if it was modified during request
         saveUninitialized: false, // for login session
-        secret: 'keyboard_cat', // TODO: move to .env
+        secret:
+          process.env.NODE_ENV !== 'production'
+            ? 'keyboard_cat'
+            : process.env.REDIS_SECRET!,
         store: new RedisStore({ client: redisClient }),
       })
     );
