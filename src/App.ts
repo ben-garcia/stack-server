@@ -1,6 +1,6 @@
 import connectRedis from 'connect-redis';
 import cors from 'cors';
-import express, { Application } from 'express';
+import express, { Application, Request, Response } from 'express';
 import helmet from 'helmet';
 import http from 'http';
 import socketio from 'socket.io';
@@ -176,6 +176,13 @@ class App {
   private initializeControllers(controllers: Controller[]): void {
     controllers.forEach(controller => {
       this.app.use(`/api${controller.path}`, controller.router);
+    });
+    // catch undefined endpoints
+    this.app.use((req: Request, res: Response) => {
+      const { url, method } = req;
+      res
+        .status(404)
+        .json({ error: `'${method}' request to '${url}' doesn't exists` });
     });
   }
 }
