@@ -1,11 +1,12 @@
 import Joi, { ObjectSchema } from '@hapi/joi';
 import express, { Request, Response, Router } from 'express';
-import redis, { RedisClient } from 'redis';
+import { RedisClient } from 'redis';
 import { getRepository, Repository } from 'typeorm';
 
 import { User, Workspace } from '../../entity';
 import { checkRedis, checkUserSession } from '../../middlewares';
 import { Controller } from '../types';
+import { createRedisClient } from '../../utils';
 
 class WorkspaceController implements Controller {
   public path: string;
@@ -16,7 +17,7 @@ class WorkspaceController implements Controller {
 
   constructor() {
     this.path = '/workspaces';
-    this.redisClient = redis.createClient({ auth_pass: 'ben' });
+    this.redisClient = createRedisClient();
     this.router = express.Router();
     this.schema = Joi.object({
       name: Joi.string()

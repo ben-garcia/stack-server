@@ -1,14 +1,10 @@
 [
 	{
-		"name": "default",
+		"name": "production",
 		"type": "postgres",
-		"host": "localhost",
-		"port": 5432,
-		"username": "ben",
-		"password": "ben",
-		"database": "stack_development",
-		"synchronize": true,
-		"logging": true,
+		"synchronize": false,
+		"dropSchema": false,
+		"logging": false,
 		"entities": ["dist/src/entity/*.js"]
 	},
 	{

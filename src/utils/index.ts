@@ -1,4 +1,10 @@
+import createRedisClient from './createRedisClient';
 import createTypeormConnection from './createTypeormConnection';
 import { closeTestDatabase, connectToTestDatabase } from './testSetup';
 
-export { createTypeormConnection, closeTestDatabase, connectToTestDatabase };
+export {
+  createRedisClient,
+  createTypeormConnection,
+  closeTestDatabase,
+  connectToTestDatabase,
+};

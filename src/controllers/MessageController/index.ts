@@ -1,10 +1,11 @@
 import Joi, { ObjectSchema } from '@hapi/joi';
 import express, { Request, Response, Router } from 'express';
-import redis, { RedisClient } from 'redis';
+import { RedisClient } from 'redis';
 import { getRepository, Repository } from 'typeorm';
 
 import { Channel, Message, User } from '../../entity';
 import { checkRedis, checkUserSession } from '../../middlewares';
+import { createRedisClient } from '../../utils';
 import { Controller } from '../types';
 
 class MessageController implements Controller {
@@ -17,7 +18,7 @@ class MessageController implements Controller {
   constructor() {
     this.messageRepository = getRepository(Message);
     this.path = '/messages';
-    this.redisClient = redis.createClient({ auth_pass: 'ben' });
+    this.redisClient = createRedisClient();
     this.router = express.Router();
     this.schema = Joi.object({
       content: Joi.string()

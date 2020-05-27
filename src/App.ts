@@ -5,22 +5,13 @@ import helmet from 'helmet';
 import http from 'http';
 import socketio from 'socket.io';
 import morgan from 'morgan';
-import redis from 'redis';
 import session from 'express-session';
 
-import { UserConnected } from './types';
 import { Controller } from './controllers/types';
+import { createRedisClient } from './utils';
+import { UserConnected } from './types';
 
 const RedisStore = connectRedis(session);
-const redisOptions =
-  process.env.NODE_ENV !== 'production'
-    ? {
-        host: '127.0.0.1',
-        port: 6379,
-        auth_pass: 'ben',
-      }
-    : { url: process.env.REDIS_URL };
-const redisClient = redis.createClient(redisOptions);
 
 class App {
   public app: Application;
@@ -176,7 +167,7 @@ class App {
           process.env.NODE_ENV !== 'production'
             ? 'keyboard_cat'
             : process.env.REDIS_SECRET!,
-        store: new RedisStore({ client: redisClient }),
+        store: new RedisStore({ client: createRedisClient() }),
       })
     );
   }
