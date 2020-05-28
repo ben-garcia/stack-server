@@ -1,11 +1,10 @@
 import redis, { RedisClient } from 'redis';
 
 const createRedisClient = () => {
-  const isProduction = process.env.NODE_ENV === 'production';
   let client: RedisClient;
-  if (isProduction) {
+  if (process.env.REDIS_URL) {
     // set heroku redis url in production
-    client = redis.createClient(process.env.REDIS_URL!);
+    client = redis.createClient(process.env.REDIS_URL);
   } else {
     // use localhost on development
     client = redis.createClient({
