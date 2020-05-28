@@ -1,10 +1,13 @@
 import redis, { RedisClient } from 'redis';
+import url from 'url';
 
 const createRedisClient = () => {
   let client: RedisClient;
   if (process.env.REDIS_URL) {
-    // set heroku redis url in production
-    client = redis.createClient(process.env.REDIS_URL);
+    const parsedUrl = url.parse(process.env.REDISTOGO_URL!);
+    // set redistogo
+    client = redis.createClient(Number(parsedUrl.port), parsedUrl.hostname!);
+    client.auth(parsedUrl!.auth!.split(':')[1]);
   } else {
     // use localhost on development
     client = redis.createClient({
