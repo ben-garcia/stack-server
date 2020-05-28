@@ -1,13 +1,9 @@
 import redis, { RedisClient } from 'redis';
-import url from 'url';
 
 const createRedisClient = () => {
   let client: RedisClient;
-  if (process.env.REDISTOGO_URL) {
-    const parsedUrl = url.parse(process.env.REDISTOGO_URL!);
-    // set redistogo
-    client = redis.createClient(Number(parsedUrl.port), parsedUrl.hostname!);
-    client.auth(parsedUrl!.auth!.split(':')[1]);
+  if (process.env.REDIS_URL) {
+    client = redis.createClient(process.env.REDIS_URL);
   } else {
     // use localhost on development
     client = redis.createClient({
