@@ -144,10 +144,9 @@ class App {
       cors({
         credentials: true, // pass the 'Cookie' header
         methods: ['GET', 'POST', 'PUT'], // supported http methods
-        origin:
-          process.env.NODE_ENV === 'production'
-            ? process.env.CLIENT_URL
-            : 'http://localhost:3000',
+        origin: process.env.CLIENT_URL
+          ? process.env.CLIENT_URL
+          : 'http://localhost:3000',
       })
     ); // enable cors
     // session + cookie information
@@ -163,10 +162,9 @@ class App {
         name: 'stackSessionId', // name for the session id cookie
         resave: false, // only save the session if it was modified during request
         saveUninitialized: false, // for login session
-        secret:
-          process.env.NODE_ENV === 'production'
-            ? process.env.REDIS_SECRET!
-            : 'keyboard_cat',
+        secret: process.env.REDIS_SECRET
+          ? process.env.REDIS_SECRET
+          : 'keyboard_cat',
         store: new RedisStore({ client: createRedisClient() }),
       })
     );
