@@ -14,7 +14,7 @@ const createRedisClient = () => {
   } else {
     // use localhost on development
     client = redis.createClient({
-      host: '127.0.0.11',
+      host: '127.0.0.1',
       port: 6379,
       auth_pass: 'ben',
     });
