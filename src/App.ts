@@ -165,7 +165,11 @@ class App {
         secret: process.env.REDIS_SECRET
           ? process.env.REDIS_SECRET
           : 'keyboard_cat',
-        store: new RedisStore({ client: createRedisClient() }),
+        store: new RedisStore(
+          process.env.NODE_ENV === 'production'
+            ? { url: process.env.REDIS_URL }
+            : { client: createRedisClient() }
+        ),
       })
     );
   }
