@@ -1,6 +1,6 @@
 import Joi, { ObjectSchema } from '@hapi/joi';
 import express, { Request, Response, Router } from 'express';
-import { RedisClient } from 'redis';
+import { Redis } from 'ioredis';
 import { getRepository, Repository } from 'typeorm';
 
 import { Channel, Message, User } from '../../entity';
@@ -11,7 +11,7 @@ import { Controller } from '../types';
 class MessageController implements Controller {
   public messageRepository: Repository<Message>;
   public path: string;
-  public redisClient: RedisClient;
+  public redisClient: Redis;
   public router: Router;
   public schema: ObjectSchema;
 

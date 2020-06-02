@@ -1,14 +1,12 @@
-import redis, { RedisClient } from 'redis';
+import Redis from 'ioredis';
 
 const createRedisClient = () => {
-  let redisClient: RedisClient;
+  let redisClient;
   if (process.env.REDIS_URL && process.env.NODE_ENV === 'production') {
-    redisClient = redis.createClient(process.env.REDIS_URL);
+    redisClient = new Redis(process.env.REDIS_URL);
   } else {
     // use localhost in development
-    redisClient = redis.createClient({
-      auth_pass: 'ben',
-    });
+    redisClient = new Redis({ password: 'ben' });
   }
 
   redisClient.on('ready', () => {

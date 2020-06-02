@@ -1,10 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
-import redis from 'redis';
+import { createRedisClient } from '../utils';
 
-const client = redis.createClient({
-  auth_pass: 'ben',
-});
-
+const client = createRedisClient();
 /**
  * Checks if the request resource is stored in Redis
  */
@@ -31,7 +28,9 @@ const checkRedis = (req: Request, res: Response, next: NextFunction) => {
         // when the resource exists in Redis then
         // return it to the client without the need
         // to query the db
-        res.status(200).json({ [`${resourceName}`]: JSON.parse(resource) });
+        res
+          .status(200)
+          .json({ [`${resourceName}`]: JSON.parse(resource as string) });
       });
     } else {
       // for when the resource inn't in Redis then
