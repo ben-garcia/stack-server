@@ -45,21 +45,27 @@ class AuthenticationController implements Controller {
   public registerUser = async (req: Request, res: Response) => {
     try {
       const validatedUser = await this.schema.validateAsync(req.body);
+      const errors = [];
 
-      // check for any records that match req.body
-      // if any record is found matching either email or username
-      // then send detailed error message.
-      const user = await this.userRepository.findOne({
-        email: req.body.email,
-        username: req.body.username,
+      // qeury the db for any user with the same email
+      const emailUser = await this.userRepository.findOne({
+        email: validatedUser.email,
       });
-      if (user) {
+      // qeury the db for any user with the same username
+      const usernameUser = await this.userRepository.findOne({
+        username: validatedUser.username,
+      });
+      if (emailUser) {
+        // if there is a user with the email
+        errors.push('User with that email already exists');
+        // res.status(409).json({ error: 'User with that email already exists' });
+      }
+      if (usernameUser) {
         // if there is a user with the username
-        // send error
-        res
-          .status(409)
-          .json({ error: 'User with that username already exists' });
-      } else {
+        errors.push('User with that username already exists');
+      }
+
+      if (!emailUser && !usernameUser) {
         // create a new record in the db.
         await this.userRepository
           .create({
@@ -70,9 +76,11 @@ class AuthenticationController implements Controller {
           .save();
 
         res.status(201).json({ message: 'User Created' });
+      } else {
+        res.status(409).json({ error: errors });
       }
     } catch (e) {
-      res.status(400).json({ error: e.details });
+      res.status(400).json({ error: e.detail });
     }
   };
 
