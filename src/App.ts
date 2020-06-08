@@ -154,7 +154,7 @@ class App {
       session({
         cookie: {
           httpOnly: true, // default
-          maxAge: 1000 * 60 * 60 * 24 * 365, // 1 year
+          maxAge: 1000 * 60 * 60 * 24 * 30, // 1 month
           path: '/api',
           sameSite: 'none',
           secure: process.env.NODE_ENV === 'production', // set in production

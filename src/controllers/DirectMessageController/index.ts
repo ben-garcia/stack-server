@@ -85,7 +85,7 @@ class DirectMessageController implements Controller {
           // save to Redis with a 1 hour expiration
           this.redisClient.setex(
             `user:${userId}-${username}:directMessages`,
-            60 * 60,
+            60 * 30, // 30 minutes
             JSON.stringify(directMessages)
           );
         }

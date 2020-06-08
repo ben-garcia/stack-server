@@ -56,7 +56,7 @@ class WorkspaceController implements Controller {
         // save to Redis with a 1 hour expiration
         this.redisClient.setex(
           `user:${userId}-${username}:workspaces`,
-          60 * 60,
+          60 * 30, // 30 minutes
           JSON.stringify(workspaces)
         );
       }
@@ -88,7 +88,7 @@ class WorkspaceController implements Controller {
         // save to Redis with a 1 hour expiration
         this.redisClient.setex(
           `user:${userId}-${username}:teammates`,
-          60 * 60,
+          60 * 30, // 30 minutes
           JSON.stringify(teammates)
         );
       }

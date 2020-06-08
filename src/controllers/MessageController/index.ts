@@ -66,7 +66,7 @@ class MessageController implements Controller {
         // save to Redis with a 1 hour expiration
         this.redisClient.setex(
           `user:${userId}-${username}:messages`,
-          60 * 60,
+          60 * 30, // 10 minutes
           JSON.stringify(messages)
         );
       }

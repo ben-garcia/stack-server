@@ -68,7 +68,7 @@ class ChannelController implements Controller {
         // save to Redis with a 1 hour expiration
         this.redisClient.setex(
           `user:${userId}-${username}:channels`,
-          60 * 60,
+          60 * 30, // 30 minutes
           JSON.stringify(channels)
         );
       }
@@ -107,7 +107,7 @@ class ChannelController implements Controller {
         // save to Redis with a 1 hour expiration
         this.redisClient.setex(
           `user:${userId}-${username}:members`,
-          60 * 60,
+          60 * 30, // 30 minutes
           JSON.stringify(channel?.members)
         );
       }
