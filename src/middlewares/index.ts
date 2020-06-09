@@ -1,5 +1,5 @@
 import checkUserSession from './userSession';
 import checkRedis from './redis';
+import checkForTestAccounts from './testAccounts';
 
-// eslint-disable-next-line
-export { checkRedis, checkUserSession };
+export { checkForTestAccounts, checkRedis, checkUserSession };
