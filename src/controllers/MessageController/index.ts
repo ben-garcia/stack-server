@@ -4,7 +4,11 @@ import { Redis } from 'ioredis';
 import { getRepository, Repository } from 'typeorm';
 
 import { Channel, Message, User } from '../../entity';
-import { checkRedis, checkUserSession } from '../../middlewares';
+import {
+  checkForTestAccounts,
+  checkRedis,
+  checkUserSession,
+} from '../../middlewares';
 import { createRedisClient } from '../../utils';
 import { Controller } from '../types';
 
@@ -33,7 +37,12 @@ class MessageController implements Controller {
 
   private initializeRoutes(): void {
     this.router.get('/', checkUserSession, checkRedis, this.getChannelMessages);
-    this.router.post('/', checkUserSession, this.createMessage);
+    this.router.post(
+      '/',
+      checkUserSession,
+      checkForTestAccounts,
+      this.createMessage
+    );
   }
 
   public getChannelMessages = async (req: Request, res: Response) => {

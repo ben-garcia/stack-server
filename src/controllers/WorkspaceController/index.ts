@@ -4,7 +4,11 @@ import { Redis } from 'ioredis';
 import { getRepository, Repository } from 'typeorm';
 
 import { User, Workspace } from '../../entity';
-import { checkRedis, checkUserSession } from '../../middlewares';
+import {
+  checkForTestAccounts,
+  checkRedis,
+  checkUserSession,
+} from '../../middlewares';
 import { Controller } from '../types';
 import { createRedisClient } from '../../utils';
 
@@ -38,8 +42,18 @@ class WorkspaceController implements Controller {
       checkRedis,
       this.getWorkspaceTeammates
     );
-    this.router.post('/', checkUserSession, this.createWorkspace);
-    this.router.put('/:workspaceId', checkUserSession, this.updateWorkspace);
+    this.router.post(
+      '/',
+      checkUserSession,
+      checkForTestAccounts,
+      this.createWorkspace
+    );
+    this.router.put(
+      '/:workspaceId',
+      checkUserSession,
+      checkForTestAccounts,
+      this.updateWorkspace
+    );
   }
 
   public getUserWorkspaces = async (req: Request, res: Response) => {

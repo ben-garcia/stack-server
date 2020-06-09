@@ -4,7 +4,11 @@ import { Redis } from 'ioredis';
 import { getRepository, Repository } from 'typeorm';
 
 import { DirectMessage, User } from '../../entity';
-import { checkRedis, checkUserSession } from '../../middlewares';
+import {
+  checkForTestAccounts,
+  checkRedis,
+  checkUserSession,
+} from '../../middlewares';
 import { Controller } from '../types';
 import { createRedisClient } from '../../utils';
 
@@ -38,7 +42,12 @@ class DirectMessageController implements Controller {
       checkRedis,
       this.getUserDirectMessages
     );
-    this.router.post('/', checkUserSession, this.createDirectMessage);
+    this.router.post(
+      '/',
+      checkUserSession,
+      checkForTestAccounts,
+      this.createDirectMessage
+    );
   }
 
   public getUserDirectMessages = async (req: Request, res: Response) => {

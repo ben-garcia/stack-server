@@ -4,7 +4,11 @@ import { Redis } from 'ioredis';
 import { getRepository, Repository } from 'typeorm';
 
 import { Channel, User, Workspace } from '../../entity';
-import { checkRedis, checkUserSession } from '../../middlewares';
+import {
+  checkForTestAccounts,
+  checkRedis,
+  checkUserSession,
+} from '../../middlewares';
 import { Controller } from '../types';
 import { createRedisClient } from '../../utils';
 
@@ -48,8 +52,18 @@ class ChannelController implements Controller {
       checkRedis,
       this.getChannelMembers
     );
-    this.router.post('/', checkUserSession, this.createChannel);
-    this.router.put('/:channelId', checkUserSession, this.updateChannel);
+    this.router.post(
+      '/',
+      checkUserSession,
+      checkForTestAccounts,
+      this.createChannel
+    );
+    this.router.put(
+      '/:channelId',
+      checkUserSession,
+      checkForTestAccounts,
+      this.updateChannel
+    );
   }
 
   public getWorkspaceChannels = async (req: Request, res: Response) => {
