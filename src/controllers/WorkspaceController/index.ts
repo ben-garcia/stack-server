@@ -168,64 +168,78 @@ class WorkspaceController implements Controller {
       });
 
       // get the usernames passed in the request body
-      const usernames = Object.values(req.body);
+      let usernames = Object.values(req.body);
+
       let user: User | undefined;
 
-      usernames.forEach(async (u, i) => {
-        // query the db for the user with username
-        user = await getRepository(User).findOne({ where: { username: u } });
+      // prevent adding a test account as a teammate
+      usernames = usernames.filter(
+        u => u !== 'stackguest' && u !== 'stacktestuser'
+      );
 
-        if (user) {
-          // don't send user's password to the client
-          delete user.password;
-          // valid teammate
-          teammates.push(user);
-        } else {
-          // user doesn't exits
-          invalidUsernames.push(u as string);
-        }
+      if (usernames.length > 0) {
+        usernames.forEach(async (u, i) => {
+          // query the db for the user with username
+          user = await getRepository(User).findOne({ where: { username: u } });
 
-        // when the loop reaches the last username
-        // send them to the client
-        if (i === usernames.length - 1) {
-          // when there are no usernames found in the db
-          // ONLY invalid usernames
-          if (invalidUsernames.length > 0 && teammates.length === 0) {
-            res
-              .status(400)
-              .json({ message: 'Username/s not in the db', invalidUsernames });
-          } else if (
-            teammates.length > 0 &&
-            invalidUsernames.length === 0 &&
-            workspace
-          ) {
-            // updated the workspace
-            workspace.teammates = [...workspace.teammates, ...teammates];
-            // save to the db
-            await workspace.save();
-            // when there are no invalid usernames
-            // ONLY valid users in the db
-            // send the teammates that were added
-            // back to the client
-            res.status(200).json({
-              message: 'Member/s Added',
-              teammates,
-            });
+          if (user) {
+            // don't send user's password to the client
+            delete user.password;
+            // valid teammate
+            teammates.push(user);
           } else {
-            // when there is a mix of both
-            if (workspace) {
-              // update workspace with the  validated usernames
-              workspace.teammates = [...workspace.teammates, ...teammates];
-              await workspace.save();
-            }
-            // send new teammates and invalid usernames to the client
-            res.status(200).json({ teammates, invalidUsernames });
+            // user doesn't exits
+            invalidUsernames.push(u as string);
           }
-        }
-      });
-      // Having added a another workspace, delete workspaces from Redis
-      // which will cause the server to qeury the db for the updated list
-      this.redisClient.del(`user:${userId}-${username}:teammates`);
+
+          // when the loop reaches the last username
+          // send them to the client
+          if (i === usernames.length - 1) {
+            // when there are no usernames found in the db
+            // ONLY invalid usernames
+            if (invalidUsernames.length > 0 && teammates.length === 0) {
+              res.status(400).json({
+                message: 'Username/s not in the db',
+                invalidUsernames,
+              });
+            } else if (
+              teammates.length > 0 &&
+              invalidUsernames.length === 0 &&
+              workspace
+            ) {
+              // updated the workspace
+              workspace.teammates = [...workspace.teammates, ...teammates];
+              // save to the db
+              await workspace.save();
+
+              // Having added a another workspace, delete workspaces from Redis
+              // which will cause the server to qeury the db for the updated list
+              this.redisClient.del(`user:${userId}-${username}:teammates`);
+
+              // when there are no invalid usernames
+              // ONLY valid users in the db
+              // send the teammates that were added
+              // back to the client
+              res.status(200).json({
+                message: 'Member/s Added',
+                teammates,
+              });
+            } else {
+              // when there is a mix of both
+              if (workspace) {
+                // update workspace with the  validated usernames
+                workspace.teammates = [...workspace.teammates, ...teammates];
+                await workspace.save();
+              }
+              // send new teammates and invalid usernames to the client
+              res.status(200).json({ teammates, invalidUsernames });
+            }
+          }
+        });
+      } else {
+        // when the user tries to add a test account
+        res.status(403).json({ error: 'Cannot add a testing account' });
+      }
     } catch (e) {
       res.status(409).json({ req, error: e });
     }
