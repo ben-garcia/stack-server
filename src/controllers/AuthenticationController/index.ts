@@ -1,21 +1,20 @@
 import express, { Request, Response, Router } from 'express';
-import { getRepository, Repository } from 'typeorm';
 import Joi, { ObjectSchema } from '@hapi/joi';
 import bcrypt from 'bcrypt';
 
-import { User } from '../../entity';
+import { UserService } from '../../services';
 import { Controller } from '../types';
 
 class AuthenticationController implements Controller {
   public path: string;
   public router: Router;
-  public userRepository: Repository<User>;
+  public userService: UserService;
   public schema: ObjectSchema;
 
-  constructor() {
+  constructor(userService: UserService) {
     this.path = '/auth';
     this.router = express.Router();
-    this.userRepository = getRepository(User);
+    this.userService = userService;
     this.schema = Joi.object({
       username: Joi.string()
         .trim()
@@ -48,13 +47,11 @@ class AuthenticationController implements Controller {
       const errors = [];
 
       // qeury the db for any user with the same email
-      const emailUser = await this.userRepository.findOne({
-        email: validatedUser.email,
-      });
+      const emailUser = await this.userService.getByEmail(validatedUser.email);
       // qeury the db for any user with the same username
-      const usernameUser = await this.userRepository.findOne({
-        username: validatedUser.username,
-      });
+      const usernameUser = await this.userService.getByUsername(
+        validatedUser.username
+      );
       if (emailUser) {
         // if there is a user with the email
         errors.push('User with that email already exists');
@@ -67,13 +64,11 @@ class AuthenticationController implements Controller {
 
       if (!emailUser && !usernameUser) {
         // create a new record in the db.
-        await this.userRepository
-          .create({
-            email: validatedUser.email,
-            password: validatedUser.password,
-            username: validatedUser.username,
-          })
-          .save();
+        await this.userService.create({
+          email: validatedUser.email,
+          password: validatedUser.password,
+          username: validatedUser.username,
+        });
 
         res.status(201).json({ message: 'User Created' });
       } else {
@@ -86,9 +81,7 @@ class AuthenticationController implements Controller {
 
   public loginUser = async (req: Request, res: Response) => {
     try {
-      const user = await this.userRepository.findOne({
-        where: { email: req.body.email },
-      });
+      const user = await this.userService.getByEmail(req.body.email);
 
       // if the user was not found in the db
       if (!user) {
