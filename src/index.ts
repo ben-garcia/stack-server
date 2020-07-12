@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import { getRepository } from 'typeorm';
 
 import App from './App';
 import {
@@ -8,6 +9,8 @@ import {
   MessageController,
   WorkspaceController,
 } from './controllers';
+import { User } from './entity';
+import { UserService } from './services';
 import { createTypeormConnection } from './utils';
 
 (async () => {
@@ -22,7 +25,7 @@ import { createTypeormConnection } from './utils';
   console.log('Connection to the db established.');
 
   const app = new App([
-    new AuthenticationController(),
+    new AuthenticationController(new UserService(getRepository<User>(User))),
     new ChannelController(),
     new DirectMessageController(),
     new MessageController(),
