@@ -1,14 +1,14 @@
 import Joi, { ObjectSchema } from '@hapi/joi';
 import express, { Request, Response, Router } from 'express';
 import { Redis } from 'ioredis';
-import { getRepository, Repository } from 'typeorm';
 
-import { User, Workspace } from '../../entity';
+import { User } from '../../entity';
 import {
   checkForTestAccounts,
   checkRedis,
   checkUserSession,
 } from '../../middlewares';
+import { UserService, WorkspaceService } from '../../services';
 import { Controller } from '../types';
 import { createRedisClient } from '../../utils';
 
@@ -17,9 +17,10 @@ class WorkspaceController implements Controller {
   public redisClient: Redis;
   public router: Router;
   public schema: ObjectSchema;
-  public workspaceRepository: Repository<Workspace>;
+  public userService: UserService;
+  public workspaceService: WorkspaceService;
 
-  constructor() {
+  constructor(userService: UserService, workspaceService: WorkspaceService) {
     this.path = '/workspaces';
     this.redisClient = createRedisClient();
     this.router = express.Router();
@@ -29,7 +30,8 @@ class WorkspaceController implements Controller {
         .required(),
       owner: Joi.number(),
     });
-    this.workspaceRepository = getRepository(Workspace);
+    this.userService = userService;
+    this.workspaceService = workspaceService;
 
     this.initializeRoutes();
   }
@@ -61,8 +63,8 @@ class WorkspaceController implements Controller {
       const { userId, username } = req.session!;
       // all workspaces that a user is a member
       // which are those that the user has created or have been invited to
-      const workspaces = await this.workspaceRepository.query(
-        `SELECT workspaces.id, workspaces.name, workspaces."ownerId" FROM workspaces INNER JOIN user_workspaces ON workspaces.id = user_workspaces.workspace INNER JOIN users ON user_workspaces.user = users.id and users.id = ${userId}`
+      const workspaces = await this.workspaceService.getUserWorkspacesById(
+        userId
       );
 
       // make sure that the user has at least 1 workspace
@@ -85,10 +87,9 @@ class WorkspaceController implements Controller {
     try {
       const { workspaceId } = req.params;
       // find the workspace in the db
-      const workspace = await this.workspaceRepository.findOne({
-        where: { id: Number(workspaceId) },
-        relations: ['teammates'],
-      });
+      const workspace = await this.workspaceService.getWorkspaceById(
+        Number(workspaceId)
+      );
       const teammates: { id: number; username: string }[] = [];
 
       /* eslint-disable no-unused-expressions */
@@ -120,21 +121,17 @@ class WorkspaceController implements Controller {
     try {
       // verify that the workspace being created matches schema.
       const validatedWorkspace = await this.schema.validateAsync(req.body);
-      const user = await getRepository(User).findOne({
-        id: Number(validatedWorkspace.owner),
-      });
+      const user = await this.userService.getById(validatedWorkspace.owner);
       let workspace;
       const { userId, username } = req.session!;
 
       if (user) {
         // if no errors then add the record
-        workspace = await this.workspaceRepository
-          .create({
-            name: validatedWorkspace.name,
-            owner: user,
-            teammates: [user],
-          })
-          .save();
+        workspace = await this.workspaceService.create({
+          name: validatedWorkspace.name,
+          owner: user,
+          teammates: [user],
+        });
 
         // remove the user before sending it
         delete workspace.owner;
@@ -160,16 +157,12 @@ class WorkspaceController implements Controller {
       // list of users that don't exitst in the database
       const invalidUsernames: string[] = [];
       // // get the correct workspace from db
-      const workspace = await this.workspaceRepository.findOne({
-        where: {
-          id: Number(workspaceId),
-        },
-        relations: ['teammates'],
-      });
+      const workspace = await this.workspaceService.getWorkspaceById(
+        Number(workspaceId)
+      );
 
       // get the usernames passed in the request body
       let usernames = Object.values(req.body);
-
       let user: User | undefined;
 
       // prevent adding a test account as a teammate
@@ -180,7 +173,7 @@ class WorkspaceController implements Controller {
       if (usernames.length > 0) {
         usernames.forEach(async (u, i) => {
           // query the db for the user with username
-          user = await getRepository(User).findOne({ where: { username: u } });
+          user = await this.userService.getByUsername(u as string);
 
           if (user) {
             // don't send user's password to the client

@@ -24,6 +24,13 @@ describe('UserService', () => {
     });
   });
 
+  describe('getById', () => {
+    it('should call the findOne method from the model', () => {
+      userService.getById(1);
+      expect(mockModel.findOne).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe('getByUsername', () => {
     it('should call the findOne method from the model', () => {
       userService.getByUsername('test');
