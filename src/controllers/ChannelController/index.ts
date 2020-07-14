@@ -1,29 +1,35 @@
 import Joi, { ObjectSchema } from '@hapi/joi';
 import express, { Request, Response, Router } from 'express';
 import { Redis } from 'ioredis';
-import { getRepository, Repository } from 'typeorm';
 
-import { Channel, User, Workspace } from '../../entity';
+import { User } from '../../entity';
 import {
   checkForTestAccounts,
   checkRedis,
   checkUserSession,
 } from '../../middlewares';
+import { ChannelService, UserService, WorkspaceService } from '../../services';
 import { Controller } from '../types';
 import { createRedisClient } from '../../utils';
 
 class ChannelController implements Controller {
-  public channelRepository: Repository<Channel>;
+  public channelService: ChannelService;
   public path: string;
   public redisClient: Redis;
   public router: Router;
   public schema: ObjectSchema;
+  public userService: UserService;
+  public workspaceService: WorkspaceService;
 
-  constructor() {
+  constructor(
+    channelService: ChannelService,
+    userService: UserService,
+    workspaceService: WorkspaceService
+  ) {
+    this.channelService = channelService;
     this.path = '/channels';
     this.redisClient = createRedisClient();
     this.router = express.Router();
-    this.channelRepository = getRepository(Channel);
     this.schema = Joi.object({
       name: Joi.string()
         .trim()
@@ -35,6 +41,8 @@ class ChannelController implements Controller {
       workspace: Joi.number().required(),
       members: Joi.array(),
     });
+    this.userService = userService;
+    this.workspaceService = workspaceService;
 
     this.initializeRoutes();
   }
@@ -73,8 +81,9 @@ class ChannelController implements Controller {
       const { userId, username } = req.session!;
       // query the dd for all channels that belong to a particular workspace
       // and that that a particular user  as a member
-      const channels = await this.channelRepository.query(
-        `SELECT * FROM channels INNER JOIN channel_members ON channels.id = channel_members.channel and channel_members.user = ${userId} and channels."workspaceId" = ${workspaceId} ORDER BY channels.name;`
+      const channels = await this.channelService.getChannelsByIds(
+        userId,
+        workspaceId
       );
 
       // make sure that the user has at least 1 channel
@@ -99,10 +108,9 @@ class ChannelController implements Controller {
       const { channelId } = req.params;
       // get the correct channel from the db
       // with members
-      const channel = await this.channelRepository.findOne({
-        where: { id: Number(channelId) },
-        relations: ['members'],
-      });
+      const channel = await this.channelService.getMembersByChannelId(
+        Number(channelId)
+      );
       // eslint-disable-next-line
       channel?.members.forEach((m: User) => {
         // eslint-disable-next-line
@@ -149,7 +157,7 @@ class ChannelController implements Controller {
       const members: User[] = [];
 
       // get the creator of the channel
-      const user = await getRepository(User).findOne({ id: Number(userId) });
+      const user = await this.userService.getById(userId);
 
       if (user) {
         members.push(user);
@@ -160,9 +168,7 @@ class ChannelController implements Controller {
       if (req.body.channel.members?.length > 1 && !validatedChannel.private) {
         req.body.channel.members.forEach(async (u: string) => {
           // query the db for the username
-          const newMember = await getRepository(User).findOne({
-            username: u,
-          });
+          const newMember = await this.userService.getByUsername(u);
 
           // if there is record,
           // add it the members array
@@ -172,21 +178,19 @@ class ChannelController implements Controller {
         });
       }
 
-      const workspace = await getRepository(Workspace).findOne({
-        id: Number(validatedChannel?.workspace),
-      });
+      const workspace = await this.workspaceService.getWorkspaceById(
+        Number(validatedChannel!.workspace)
+      );
 
       if (workspace) {
         // if no errors then add the record
-        const channel = await this.channelRepository
-          .create({
-            name: validatedChannel.name,
-            description: validatedChannel.description,
-            private: validatedChannel.private,
-            workspace,
-            members: [...members],
-          })
-          .save();
+        const channel = await this.channelService.create({
+          name: validatedChannel.name,
+          description: validatedChannel.description,
+          private: validatedChannel.private,
+          workspace,
+          members: [...members],
+        });
 
         // remove the workspace before sending it
         delete channel.workspace;
@@ -222,9 +226,7 @@ class ChannelController implements Controller {
         // and query the db for each user and
         // add it to the array of new members
         req.body.members.forEach(async (u: string) => {
-          const user = await getRepository(User).findOne({
-            where: { username: u },
-          });
+          const user = await this.userService.getByUsername(u);
 
           // make sure there a user in the db
           if (user) {
@@ -233,12 +235,9 @@ class ChannelController implements Controller {
         });
 
         // query the db for the correct channel
-        const channel = await this.channelRepository.findOne({
-          where: {
-            id: Number(channelId),
-          },
-          relations: ['members'],
-        });
+        const channel = await this.channelService.getMembersByChannelId(
+          Number(channelId)
+        );
 
         // update channel with new members
         channel!.members = [...channel!.members, ...newMembers];
@@ -248,7 +247,7 @@ class ChannelController implements Controller {
         res.status(200).json({ message: 'Channel members have been updated' });
       } else if (!req.body.members) {
         // update the channel's description or topic
-        await this.channelRepository.update(Number(channelId), {
+        await this.channelService.update(Number(channelId), {
           ...req.body,
         });
         res.status(200).json({ message: 'Channel description/topic changed' });

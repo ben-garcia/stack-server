@@ -9,8 +9,8 @@ import {
   MessageController,
   WorkspaceController,
 } from './controllers';
-import { User } from './entity';
-import { UserService } from './services';
+import { Channel, User, Workspace } from './entity';
+import { ChannelService, UserService, WorkspaceService } from './services';
 import { createTypeormConnection } from './utils';
 
 (async () => {
@@ -26,10 +26,17 @@ import { createTypeormConnection } from './utils';
 
   const app = new App([
     new AuthenticationController(new UserService(getRepository<User>(User))),
-    new ChannelController(),
+    new ChannelController(
+      new ChannelService(getRepository<Channel>(Channel)),
+      new UserService(getRepository<User>(User)),
+      new WorkspaceService(getRepository<Workspace>(Workspace))
+    ),
     new DirectMessageController(),
     new MessageController(),
-    new WorkspaceController(),
+    new WorkspaceController(
+      new UserService(getRepository<User>(User)),
+      new WorkspaceService(getRepository<Workspace>(Workspace))
+    ),
   ]);
 
   app.listen();
