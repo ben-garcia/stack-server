@@ -48,6 +48,7 @@ describe('WorkspaceService', () => {
       };
       workspaceService.create(workspace);
       expect(mockModel.create).toHaveBeenCalledTimes(1);
+      expect(mockModel.create).toHaveBeenCalledWith(workspace);
       expect(mockModel.save).toHaveBeenCalledTimes(1);
     });
   });

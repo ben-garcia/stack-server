@@ -59,6 +59,7 @@ describe('ChannelService', () => {
 
       channelService.create(channel);
       expect(mockModel.create).toHaveBeenCalledTimes(1);
+      expect(mockModel.create).toHaveBeenCalledWith(channel);
       expect(mockModel.save).toHaveBeenCalledTimes(1);
     });
 
@@ -66,6 +67,9 @@ describe('ChannelService', () => {
       it('should call the update method from the model', () => {
         channelService.update(1, { name: 'name change' });
         expect(mockModel.update).toHaveBeenCalledTimes(1);
+        expect(mockModel.update).toHaveBeenCalledWith(1, {
+          name: 'name change',
+        });
       });
     });
   });

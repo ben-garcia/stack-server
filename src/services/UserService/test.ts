@@ -47,6 +47,7 @@ describe('UserService', () => {
       };
       userService.create(user);
       expect(mockModel.create).toHaveBeenCalledTimes(1);
+      expect(mockModel.create).toHaveBeenCalledWith(user);
       expect(mockModel.save).toHaveBeenCalledTimes(1);
     });
   });
