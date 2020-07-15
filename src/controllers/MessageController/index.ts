@@ -1,26 +1,33 @@
 import Joi, { ObjectSchema } from '@hapi/joi';
 import express, { Request, Response, Router } from 'express';
 import { Redis } from 'ioredis';
-import { getRepository, Repository } from 'typeorm';
 
-import { Channel, Message, User } from '../../entity';
+import { Message } from '../../entity';
 import {
   checkForTestAccounts,
   checkRedis,
   checkUserSession,
 } from '../../middlewares';
+import { ChannelService, MessageService, UserService } from '../../services';
 import { createRedisClient } from '../../utils';
 import { Controller } from '../types';
 
 class MessageController implements Controller {
-  public messageRepository: Repository<Message>;
+  public channelService: ChannelService;
+  public messageService: MessageService;
   public path: string;
   public redisClient: Redis;
   public router: Router;
   public schema: ObjectSchema;
+  public userService: UserService;
 
-  constructor() {
-    this.messageRepository = getRepository(Message);
+  constructor(
+    channelService: ChannelService,
+    messageService: MessageService,
+    userService: UserService
+  ) {
+    this.channelService = channelService;
+    this.messageService = messageService;
     this.path = '/messages';
     this.redisClient = createRedisClient();
     this.router = express.Router();
@@ -31,6 +38,7 @@ class MessageController implements Controller {
       user: Joi.number().required(),
       channel: Joi.number().required(),
     });
+    this.userService = userService;
 
     this.initializeRoutes();
   }
@@ -51,11 +59,10 @@ class MessageController implements Controller {
       const { channelId } = req.query;
       const { userId, username } = req.session!;
       // get the correct channel from the db
-      const messages = await this.messageRepository.find({
-        where: { channel: Number(channelId) },
-        relations: ['user'],
-        order: { createdAt: 'ASC' },
-      });
+      const messages = await this.messageService.getAllByChannelId(
+        Number(channelId)
+      );
+
       // quick fix, there should be a better way to do this in typeorm
       messages.forEach((m: Message) => {
         // eslint-disable-next-line
@@ -99,28 +106,17 @@ class MessageController implements Controller {
       const { userId: sessionUserId, username } = req.session!;
       const { channel: channelId, user: userId } = req.body.message;
       // get the channel to add the message
-      const channel = await getRepository(Channel).findOne({
-        where: {
-          id: channelId,
-        },
-      });
-
+      const channel = await this.channelService.getById(channelId);
       // get the user who created the message from the db
-      const user = await getRepository(User).findOne({
-        where: {
-          id: userId,
-        },
-      });
-
+      const user = await this.userService.getById(userId);
       let message: Message | null = null;
+
       if (channel && user) {
-        message = await this.messageRepository
-          .create({
-            channel,
-            content: validatedMessage.content,
-            user,
-          })
-          .save();
+        message = await this.messageService.create({
+          channel,
+          content: validatedMessage.content,
+          user,
+        });
 
         //  remove the user before sending it
         delete message.user;

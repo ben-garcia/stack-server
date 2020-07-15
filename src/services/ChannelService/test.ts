@@ -19,6 +19,14 @@ describe('ChannelService', () => {
     expect(channelService).toBeDefined();
   });
 
+  describe('getById', () => {
+    it('should call findOne method from the model', () => {
+      channelService.getById(1);
+      expect(mockModel.findOne).toHaveBeenCalledTimes(1);
+      expect(mockModel.findOne).toHaveBeenCalledWith(1);
+    });
+  });
+
   describe('getChannelsByIds', () => {
     it('should call the query method from the model', () => {
       channelService.getChannelsByIds('1', '2');

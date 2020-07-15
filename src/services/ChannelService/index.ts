@@ -39,6 +39,10 @@ class ChannelService {
     this.channelRepository = channelRepository;
   }
 
+  async getById(channelId: number): Promise<Channel | undefined> {
+    return this.channelRepository.findOne(channelId);
+  }
+
   async getChannelsByIds(
     userId: string,
     workspaceId: string

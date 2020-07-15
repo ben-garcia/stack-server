@@ -9,8 +9,13 @@ import {
   MessageController,
   WorkspaceController,
 } from './controllers';
-import { Channel, User, Workspace } from './entity';
-import { ChannelService, UserService, WorkspaceService } from './services';
+import { Channel, Message, User, Workspace } from './entity';
+import {
+  ChannelService,
+  MessageService,
+  UserService,
+  WorkspaceService,
+} from './services';
 import { createTypeormConnection } from './utils';
 
 (async () => {
@@ -32,7 +37,11 @@ import { createTypeormConnection } from './utils';
       new WorkspaceService(getRepository<Workspace>(Workspace))
     ),
     new DirectMessageController(),
-    new MessageController(),
+    new MessageController(
+      new ChannelService(getRepository<Channel>(Channel)),
+      new MessageService(getRepository<Message>(Message)),
+      new UserService(getRepository<User>(User))
+    ),
     new WorkspaceController(
       new UserService(getRepository<User>(User)),
       new WorkspaceService(getRepository<Workspace>(Workspace))
