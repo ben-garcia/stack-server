@@ -1,26 +1,30 @@
 import Joi, { ObjectSchema } from '@hapi/joi';
 import express, { Request, Response, Router } from 'express';
 import { Redis } from 'ioredis';
-import { getRepository, Repository } from 'typeorm';
 
-import { DirectMessage, User } from '../../entity';
+import { DirectMessage } from '../../entity';
 import {
   checkForTestAccounts,
   checkRedis,
   checkUserSession,
 } from '../../middlewares';
+import { DirectMessageService, UserService } from '../../services';
 import { Controller } from '../types';
 import { createRedisClient } from '../../utils';
 
 class DirectMessageController implements Controller {
-  public directMessageRepository: Repository<DirectMessage>;
+  public directMessageService: DirectMessageService;
   public path: string;
   public redisClient: Redis;
   public router: Router;
   public schema: ObjectSchema;
+  public userService: UserService;
 
-  constructor() {
-    this.directMessageRepository = getRepository(DirectMessage);
+  constructor(
+    directMessageService: DirectMessageService,
+    userService: UserService
+  ) {
+    this.directMessageService = directMessageService;
     this.path = '/direct-messages';
     this.redisClient = createRedisClient();
     this.router = express.Router();
@@ -31,6 +35,7 @@ class DirectMessageController implements Controller {
       user: Joi.number().required(),
       workspaceId: Joi.number().required(),
     });
+    this.userService = userService;
 
     this.initializeRoutes();
   }
@@ -55,25 +60,15 @@ class DirectMessageController implements Controller {
       // get the channel id and workspace id
       const { teammateId, workspaceId } = req.query;
       const { userId, username } = req.session!;
-      const user = await getRepository(User).findOne({
-        where: { id: Number(userId) },
-      });
+      const user = await this.userService.getById(Number(userId));
+
       if (user) {
         // get the correct channel from the db
-        const directMessages = await this.directMessageRepository.find({
-          where: [
-            {
-              user: Number(teammateId),
-              workspaceId: Number(workspaceId),
-            },
-            {
-              user: Number(userId),
-              workspaceId: Number(workspaceId),
-            },
-          ],
-          relations: ['user'],
-          order: { createdAt: 'ASC' },
-        });
+        const directMessages = await this.directMessageService.getByIds(
+          Number(teammateId),
+          Number(workspaceId),
+          Number(userId)
+        );
 
         // quick fix, there should be a better way to do this in typeorm
         directMessages.forEach((m: DirectMessage) => {
@@ -120,21 +115,15 @@ class DirectMessageController implements Controller {
       const { userId: sessionUserId, username } = req.session!;
       const { user: userId, workspaceId } = req.body.message;
       // get the user who created the message from the db
-      const user = await getRepository(User).findOne({
-        where: {
-          id: userId,
-        },
-      });
+      const user = await this.userService.getById(userId);
 
       let directMessage: DirectMessage | null = null;
       if (user) {
-        directMessage = await this.directMessageRepository
-          .create({
-            content: validatedDirectMessage.content,
-            user,
-            workspaceId,
-          })
-          .save();
+        directMessage = await this.directMessageService.create({
+          content: validatedDirectMessage.content,
+          user,
+          workspaceId,
+        });
 
         //  remove the user before sending it
         delete directMessage.user;
