@@ -1,6 +1,5 @@
 import Joi, { ObjectSchema } from '@hapi/joi';
 import express, { Request, Response, Router } from 'express';
-import { Redis } from 'ioredis';
 
 import { DirectMessage } from '../../entity';
 import {
@@ -8,25 +7,29 @@ import {
   checkRedis,
   checkUserSession,
 } from '../../middlewares';
-import { DirectMessageService, UserService } from '../../services';
+import {
+  DirectMessageService,
+  RedisService,
+  UserService,
+} from '../../services';
 import { Controller } from '../types';
-import { createRedisClient } from '../../utils';
 
 class DirectMessageController implements Controller {
   public directMessageService: DirectMessageService;
   public path: string;
-  public redisClient: Redis;
+  public redisService: RedisService;
   public router: Router;
   public schema: ObjectSchema;
   public userService: UserService;
 
   constructor(
     directMessageService: DirectMessageService,
+    redisService: RedisService,
     userService: UserService
   ) {
     this.directMessageService = directMessageService;
     this.path = '/direct-messages';
-    this.redisClient = createRedisClient();
+    this.redisService = redisService;
     this.router = express.Router();
     this.schema = Joi.object({
       content: Joi.string()
@@ -87,10 +90,9 @@ class DirectMessageController implements Controller {
         // make sure that the user has at least 1 direct message with teammate
         if (directMessages.length > 0) {
           // save to Redis with a 1 hour expiration
-          this.redisClient.setex(
+          this.redisService.saveKey(
             `user:${userId}-${username}:directMessages`,
-            60 * 30, // 30 minutes
-            JSON.stringify(directMessages)
+            directMessages
           );
         }
         // send messages to the client
@@ -130,7 +132,7 @@ class DirectMessageController implements Controller {
 
         // Having added a another direct message, delete directMessages from Redis
         // which will cause the server to qeury the db for the updated list
-        this.redisClient.del(
+        this.redisService.deleteKey(
           `user:${sessionUserId}-${username}:directMessages`
         );
 

@@ -1,7 +1,14 @@
 import { Request, Response, NextFunction } from 'express';
-import { createRedisClient } from '../utils';
+import Redis from 'ioredis';
 
-const client = createRedisClient();
+let client: Redis.Redis;
+
+if (process.env.REDIS_URL && process.env.NODE_ENV === 'production') {
+  client = new Redis(process.env.REDIS_URL);
+} else {
+  // use localhost in development
+  client = new Redis({ password: 'ben' });
+}
 /**
  * Checks if the request resource is stored in Redis
  */

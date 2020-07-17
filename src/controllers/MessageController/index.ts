@@ -1,6 +1,5 @@
 import Joi, { ObjectSchema } from '@hapi/joi';
 import express, { Request, Response, Router } from 'express';
-import { Redis } from 'ioredis';
 
 import { Message } from '../../entity';
 import {
@@ -8,15 +7,19 @@ import {
   checkRedis,
   checkUserSession,
 } from '../../middlewares';
-import { ChannelService, MessageService, UserService } from '../../services';
-import { createRedisClient } from '../../utils';
+import {
+  ChannelService,
+  MessageService,
+  RedisService,
+  UserService,
+} from '../../services';
 import { Controller } from '../types';
 
 class MessageController implements Controller {
   public channelService: ChannelService;
   public messageService: MessageService;
   public path: string;
-  public redisClient: Redis;
+  public redisService: RedisService;
   public router: Router;
   public schema: ObjectSchema;
   public userService: UserService;
@@ -24,12 +27,13 @@ class MessageController implements Controller {
   constructor(
     channelService: ChannelService,
     messageService: MessageService,
+    redisService: RedisService,
     userService: UserService
   ) {
     this.channelService = channelService;
     this.messageService = messageService;
     this.path = '/messages';
-    this.redisClient = createRedisClient();
+    this.redisService = redisService;
     this.router = express.Router();
     this.schema = Joi.object({
       content: Joi.string()
@@ -80,10 +84,9 @@ class MessageController implements Controller {
       // make sure that the user has at least 1 channel
       if (messages.length > 0) {
         // save to Redis with a 1 hour expiration
-        this.redisClient.setex(
+        this.redisService.saveKey(
           `user:${userId}-${username}:messages`,
-          60 * 30, // 10 minutes
-          JSON.stringify(messages)
+          messages
         );
       }
 
@@ -125,7 +128,9 @@ class MessageController implements Controller {
 
         // Having added a another message, delete messages from Redis
         // which will cause the server to qeury the db for the updated list
-        this.redisClient.del(`user:${sessionUserId}-${username}:messages`);
+        this.redisService.deleteKey(
+          `user:${sessionUserId}-${username}:messages`
+        );
 
         res.status(201).json({
           success: 'Message Created',

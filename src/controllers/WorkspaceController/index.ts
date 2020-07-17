@@ -1,6 +1,5 @@
 import Joi, { ObjectSchema } from '@hapi/joi';
 import express, { Request, Response, Router } from 'express';
-import { Redis } from 'ioredis';
 
 import { User } from '../../entity';
 import {
@@ -8,21 +7,24 @@ import {
   checkRedis,
   checkUserSession,
 } from '../../middlewares';
-import { UserService, WorkspaceService } from '../../services';
+import { RedisService, UserService, WorkspaceService } from '../../services';
 import { Controller } from '../types';
-import { createRedisClient } from '../../utils';
 
 class WorkspaceController implements Controller {
   public path: string;
-  public redisClient: Redis;
+  public redisService: RedisService;
   public router: Router;
   public schema: ObjectSchema;
   public userService: UserService;
   public workspaceService: WorkspaceService;
 
-  constructor(userService: UserService, workspaceService: WorkspaceService) {
+  constructor(
+    redisService: RedisService,
+    userService: UserService,
+    workspaceService: WorkspaceService
+  ) {
     this.path = '/workspaces';
-    this.redisClient = createRedisClient();
+    this.redisService = redisService;
     this.router = express.Router();
     this.schema = Joi.object({
       name: Joi.string()
@@ -70,10 +72,9 @@ class WorkspaceController implements Controller {
       // make sure that the user has at least 1 workspace
       if (workspaces.length > 0) {
         // save to Redis with a 1 hour expiration
-        this.redisClient.setex(
+        this.redisService.saveKey(
           `user:${userId}-${username}:workspaces`,
-          60 * 30, // 30 minutes
-          JSON.stringify(workspaces)
+          workspaces
         );
       }
 
@@ -101,10 +102,9 @@ class WorkspaceController implements Controller {
         // having passed userSession middleware
         const { userId, username } = req.session!;
         // save to Redis with a 1 hour expiration
-        this.redisClient.setex(
+        this.redisService.saveKey(
           `user:${userId}-${username}:teammates`,
-          60 * 30, // 30 minutes
-          JSON.stringify(teammates)
+          teammates
         );
       }
 
@@ -140,7 +140,7 @@ class WorkspaceController implements Controller {
 
       // Having added a another workspace, delete workspaces from Redis
       // which will cause the server to qeury the db for the updated list
-      this.redisClient.del(`user:${userId}-${username}:workspaces`);
+      this.redisService.deleteKey(`user:${userId}-${username}:workspaces`);
 
       res.status(201).json({ message: 'Workspace Created', workspace });
     } catch (e) {
@@ -207,7 +207,9 @@ class WorkspaceController implements Controller {
 
               // Having added a another workspace, delete workspaces from Redis
               // which will cause the server to qeury the db for the updated list
-              this.redisClient.del(`user:${userId}-${username}:teammates`);
+              this.redisService.deleteKey(
+                `user:${userId}-${username}:teammates`
+              );
 
               // when there are no invalid usernames
               // ONLY valid users in the db

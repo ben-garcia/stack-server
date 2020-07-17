@@ -1,6 +1,5 @@
 import Joi, { ObjectSchema } from '@hapi/joi';
 import express, { Request, Response, Router } from 'express';
-import { Redis } from 'ioredis';
 
 import { User } from '../../entity';
 import {
@@ -8,14 +7,18 @@ import {
   checkRedis,
   checkUserSession,
 } from '../../middlewares';
-import { ChannelService, UserService, WorkspaceService } from '../../services';
+import {
+  ChannelService,
+  RedisService,
+  UserService,
+  WorkspaceService,
+} from '../../services';
 import { Controller } from '../types';
-import { createRedisClient } from '../../utils';
 
 class ChannelController implements Controller {
   public channelService: ChannelService;
   public path: string;
-  public redisClient: Redis;
+  public redisService: RedisService;
   public router: Router;
   public schema: ObjectSchema;
   public userService: UserService;
@@ -23,12 +26,13 @@ class ChannelController implements Controller {
 
   constructor(
     channelService: ChannelService,
+    redisService: RedisService,
     userService: UserService,
     workspaceService: WorkspaceService
   ) {
     this.channelService = channelService;
     this.path = '/channels';
-    this.redisClient = createRedisClient();
+    this.redisService = redisService;
     this.router = express.Router();
     this.schema = Joi.object({
       name: Joi.string()
@@ -89,10 +93,9 @@ class ChannelController implements Controller {
       // make sure that the user has at least 1 channel
       if (channels.length > 0) {
         // save to Redis with a 1 hour expiration
-        this.redisClient.setex(
+        this.redisService.saveKey(
           `user:${userId}-${username}:channels`,
-          60 * 30, // 30 minutes
-          JSON.stringify(channels)
+          channels
         );
       }
 
@@ -127,10 +130,9 @@ class ChannelController implements Controller {
         // having passed userSession middleware
         const { userId, username } = req.session!;
         // save to Redis with a 1 hour expiration
-        this.redisClient.setex(
+        this.redisService.saveKey(
           `user:${userId}-${username}:members`,
-          60 * 30, // 30 minutes
-          JSON.stringify(channel?.members)
+          channel?.members as User[]
         );
       }
 
@@ -199,7 +201,7 @@ class ChannelController implements Controller {
 
         // Having added a another channel, delete channels from Redis
         // which will cause the server to qeury the db for the updated list
-        this.redisClient.del(`user:${userId}-${username}:channels`);
+        this.redisService.deleteKey(`user:${userId}-${username}:channels`);
 
         res.status(201).json({ message: 'Channel Created', channel });
       }
@@ -257,7 +259,7 @@ class ChannelController implements Controller {
       }
       // Having updated a channel, delete channels from Redis
       // which will cause the server to qeury the db for the updated list
-      this.redisClient.del(`user:${userId}-${username}:channels`);
+      this.redisService.deleteKey(`user:${userId}-${username}:channels`);
     } catch (e) {
       // eslint-disable-next-line
       console.log('ChannelController updateChannel error: ', e);

@@ -1,14 +1,14 @@
 import connectRedis from 'connect-redis';
 import cors from 'cors';
 import express, { Application, Request, Response } from 'express';
+import session from 'express-session';
 import helmet from 'helmet';
 import http from 'http';
-import socketio from 'socket.io';
 import morgan from 'morgan';
-import session from 'express-session';
+import Redis from 'ioredis';
+import socketio from 'socket.io';
 
 import { Controller } from './controllers/types';
-import { createRedisClient } from './utils';
 import { UserConnected } from './types';
 
 const RedisStore = connectRedis(session);
@@ -137,6 +137,15 @@ class App {
 
   // add the middlewares for the application.
   private initializeMiddleware(): void {
+    let redisClient: Redis.Redis;
+
+    if (process.env.REDIS_URL && process.env.NODE_ENV === 'production') {
+      redisClient = new Redis(process.env.REDIS_URL);
+    } else {
+      // use localhost in development
+      redisClient = new Redis({ password: 'ben' });
+    }
+
     this.app.use(express.json()); // parse application/json in req.body
     this.app.use(morgan('dev')); // logger
     this.app.use(helmet()); // sets up various HTTP headers for security
@@ -167,7 +176,7 @@ class App {
           ? process.env.REDIS_SECRET
           : 'keyboard_cat',
         store: new RedisStore({
-          client: createRedisClient(),
+          client: redisClient,
         }),
       })
     );
