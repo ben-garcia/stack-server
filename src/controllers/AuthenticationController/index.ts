@@ -41,7 +41,7 @@ class AuthenticationController implements Controller {
     this.router.post('/logout', this.logoutUser);
   }
 
-  public registerUser = async (req: Request, res: Response) => {
+  public registerUser = async (req: Request, res: Response): Promise<void> => {
     try {
       const validatedUser = await this.schema.validateAsync(req.body);
       const errors = [];
@@ -79,7 +79,7 @@ class AuthenticationController implements Controller {
     }
   };
 
-  public loginUser = async (req: Request, res: Response) => {
+  public loginUser = async (req: Request, res: Response): Promise<void> => {
     try {
       const user = await this.userService.getByEmail(req.body.email);
 
@@ -120,7 +120,7 @@ class AuthenticationController implements Controller {
     }
   };
 
-  public logoutUser = (req: Request, res: Response) => {
+  public logoutUser = (req: Request, res: Response): void => {
     const { username } = req.session!;
     req.session!.destroy(err => {
       if (err) {
