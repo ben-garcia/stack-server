@@ -60,7 +60,10 @@ class WorkspaceController implements Controller {
     );
   }
 
-  public getUserWorkspaces = async (req: Request, res: Response) => {
+  public getUserWorkspaces = async (
+    req: Request,
+    res: Response
+  ): Promise<void> => {
     try {
       const { userId, username } = req.session!;
       // all workspaces that a user is a member
@@ -84,7 +87,10 @@ class WorkspaceController implements Controller {
     }
   };
 
-  public getWorkspaceTeammates = async (req: Request, res: Response) => {
+  public getWorkspaceTeammates = async (
+    req: Request,
+    res: Response
+  ): Promise<void> => {
     try {
       const { workspaceId } = req.params;
       // find the workspace in the db
@@ -117,7 +123,10 @@ class WorkspaceController implements Controller {
     }
   };
 
-  public createWorkspace = async (req: Request, res: Response) => {
+  public createWorkspace = async (
+    req: Request,
+    res: Response
+  ): Promise<void> => {
     try {
       // verify that the workspace being created matches schema.
       const validatedWorkspace = await this.schema.validateAsync(req.body);
@@ -148,7 +157,10 @@ class WorkspaceController implements Controller {
     }
   };
 
-  public updateWorkspace = async (req: Request, res: Response) => {
+  public updateWorkspace = async (
+    req: Request,
+    res: Response
+  ): Promise<void> => {
     try {
       const { userId, username } = req.session!;
       const { workspaceId } = req.params;
