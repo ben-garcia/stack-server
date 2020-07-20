@@ -16,7 +16,7 @@ describe('WorkspaceController', () => {
     },
   };
   const mockResponse = {
-    status: jest.fn(),
+    status: jest.fn().mockReturnThis(),
     json: jest.fn(),
   };
 
@@ -178,6 +178,152 @@ describe('WorkspaceController', () => {
       ).toHaveBeenCalledWith(`user:${userId}-${username}:teammates`, [
         teammate,
       ]);
+    });
+  });
+
+  describe('createWorkspace', () => {
+    it('should call workspaceService.userService.getById and redisService.deleteKey AND NOT workspaceService.create when no user is found', async () => {
+      const { userId, username } = mockRequest.session;
+
+      try {
+        await workspaceController.createWorkspace(
+          mockRequest as any,
+          mockResponse as any
+        );
+        // eslint-disable-next-line no-empty
+      } catch (e) {}
+
+      expect(workspaceController.userService.getById).toHaveBeenCalledTimes(1);
+      expect(workspaceController.userService.getById).toHaveBeenCalledWith(
+        mockRequest.body.owner
+      );
+
+      expect(workspaceController.workspaceService.create).toHaveBeenCalledTimes(
+        0
+      );
+
+      expect(workspaceController.redisService.deleteKey).toHaveBeenCalledTimes(
+        1
+      );
+      expect(workspaceController.redisService.deleteKey).toHaveBeenCalledWith(
+        `user:${userId}-${username}:workspaces`
+      );
+    });
+
+    it('should call workspaceService.userService.getById and redisService.deleteKey and workspaceService.create when user is found', async () => {
+      const { userId, username } = mockRequest.session;
+      const user = {
+        id: 73,
+      };
+      const workspace = {
+        owner: mockRequest.body.owner,
+        teammates: [user],
+      };
+
+      workspaceController.userService.getById = jest
+        .fn()
+        .mockResolvedValueOnce(user);
+
+      workspaceController.workspaceService.create = jest
+        .fn()
+        .mockResolvedValueOnce(workspace);
+
+      try {
+        await workspaceController.createWorkspace(
+          mockRequest as any,
+          mockResponse as any
+        );
+        // eslint-disable-next-line no-empty
+      } catch (e) {}
+
+      expect(workspaceController.userService.getById).toHaveBeenCalledTimes(1);
+      expect(workspaceController.userService.getById).toHaveBeenCalledWith(
+        mockRequest.body.owner
+      );
+
+      expect(workspaceController.workspaceService.create).toHaveBeenCalledTimes(
+        1
+      );
+      expect(workspaceController.workspaceService.create).toHaveBeenCalledWith({
+        name: mockRequest.body.name,
+        owner: user,
+        teammates: [user],
+      });
+
+      expect(workspaceController.redisService.deleteKey).toHaveBeenCalledTimes(
+        1
+      );
+      expect(workspaceController.redisService.deleteKey).toHaveBeenCalledWith(
+        `user:${userId}-${username}:workspaces`
+      );
+    });
+  });
+
+  describe('updateWorkspace', () => {
+    it('should call workspaceService.workspaceService.getWorkspaceById ONLY when there are no usernames passed in req.body', async () => {
+      try {
+        await workspaceController.updateWorkspace(
+          // no usernames in req.body
+          { ...mockRequest, body: {} } as any,
+          mockResponse as any
+        );
+        // eslint-disable-next-line no-empty
+      } catch (e) {}
+
+      expect(
+        workspaceController.workspaceService.getWorkspaceById
+      ).toHaveBeenCalledTimes(1);
+      expect(
+        workspaceController.workspaceService.getWorkspaceById
+      ).toHaveBeenCalledWith(mockRequest.params.workspaceId);
+
+      expect(
+        workspaceController.userService.getByUsername
+      ).toHaveBeenCalledTimes(0);
+
+      expect(workspaceController.redisService.deleteKey).toHaveBeenCalledTimes(
+        0
+      );
+    });
+
+    it('should call workspaceService.getWorkspaceById, userService.getByUsername when there are usernames passed in req.body', async () => {
+      const users = {
+        username1: 'userone',
+        username2: 'usertwo',
+      };
+
+      try {
+        await workspaceController.updateWorkspace(
+          {
+            ...mockRequest,
+            body: users,
+          } as any,
+          mockResponse as any
+        );
+        // eslint-disable-next-line no-empty
+      } catch (e) {}
+
+      expect(
+        workspaceController.workspaceService.getWorkspaceById
+      ).toHaveBeenCalledTimes(1);
+      expect(
+        workspaceController.workspaceService.getWorkspaceById
+      ).toHaveBeenCalledWith(mockRequest.params.workspaceId);
+
+      // 2 calls as there are 2 usernames passed to req.body
+      expect(
+        workspaceController.userService.getByUsername
+      ).toHaveBeenCalledTimes(2);
+      expect(
+        workspaceController.userService.getByUsername
+      ).toHaveBeenNthCalledWith(1, users.username1);
+      expect(
+        workspaceController.userService.getByUsername
+      ).toHaveBeenNthCalledWith(2, users.username2);
+
+      expect(workspaceController.redisService.deleteKey).toHaveBeenCalledTimes(
+        0
+      );
     });
   });
 });

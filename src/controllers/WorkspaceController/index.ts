@@ -217,7 +217,7 @@ class WorkspaceController implements Controller {
               // save to the db
               await workspace.save();
 
-              // Having added a another workspace, delete workspaces from Redis
+              // Having added a another teammate, delete workspaces from Redis
               // which will cause the server to qeury the db for the updated list
               this.redisService.deleteKey(
                 `user:${userId}-${username}:teammates`
