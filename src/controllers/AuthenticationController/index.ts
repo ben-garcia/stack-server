@@ -75,7 +75,9 @@ class AuthenticationController implements Controller {
         res.status(409).json({ error: errors });
       }
     } catch (e) {
-      res.status(400).json({ error: e.detail });
+      // eslint-disable-next-line no-console
+      // console.log('error in registerUser: ', e);
+      res.status(400).json({ error: e.details[0].message });
     }
   };
 

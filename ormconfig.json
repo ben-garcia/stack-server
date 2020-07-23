@@ -33,7 +33,7 @@
 		"port": 5432,
 		"username": "ben",
 		"password": "ben",
-		"database": "stack_development_test",
+		"database": "stack_test",
 		"synchronize": true,
 		"logging": false,
 		"dropSchema": true,
