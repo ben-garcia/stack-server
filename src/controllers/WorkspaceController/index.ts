@@ -145,15 +145,17 @@ class WorkspaceController implements Controller {
         // remove the user before sending it
         delete workspace.owner;
         delete workspace.teammates;
+
+        // Having added a another workspace, delete workspaces from Redis
+        // which will cause the server to qeury the db for the updated list
+        this.redisService.deleteKey(`user:${userId}-${username}:workspaces`);
+
+        res.status(201).json({ message: 'Workspace Created', workspace });
+      } else {
+        res.status(404).json({ error: 'No user exists with that id' });
       }
-
-      // Having added a another workspace, delete workspaces from Redis
-      // which will cause the server to qeury the db for the updated list
-      this.redisService.deleteKey(`user:${userId}-${username}:workspaces`);
-
-      res.status(201).json({ message: 'Workspace Created', workspace });
     } catch (e) {
-      res.status(409).json({ error: e });
+      res.status(409).json({ error: e.message });
     }
   };
 
@@ -248,7 +250,7 @@ class WorkspaceController implements Controller {
         res.status(403).json({ error: 'Cannot add a testing account' });
       }
     } catch (e) {
-      res.status(409).json({ req, error: e });
+      res.status(409).json({ error: e });
     }
   };
 }

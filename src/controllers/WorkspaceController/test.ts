@@ -182,9 +182,7 @@ describe('WorkspaceController', () => {
   });
 
   describe('createWorkspace', () => {
-    it('should call workspaceService.userService.getById and redisService.deleteKey AND NOT workspaceService.create when no user is found', async () => {
-      const { userId, username } = mockRequest.session;
-
+    it('should call workspaceService.userService.getById ONLY when no user is found', async () => {
       try {
         await workspaceController.createWorkspace(
           mockRequest as any,
@@ -203,10 +201,7 @@ describe('WorkspaceController', () => {
       );
 
       expect(workspaceController.redisService.deleteKey).toHaveBeenCalledTimes(
-        1
-      );
-      expect(workspaceController.redisService.deleteKey).toHaveBeenCalledWith(
-        `user:${userId}-${username}:workspaces`
+        0
       );
     });
 

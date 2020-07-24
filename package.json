@@ -12,7 +12,7 @@
     "postinstall": "npm run clean && npm run build",
     "start": "node dist/src/index.js",
     "start:dev": "NODE_ENV=development nodemon --exec ts-node src/index.ts",
-    "test": "jest --watch"
+    "test": "jest --watch --runInBand"
   },
   "dependencies": {
     "@hapi/joi": "^16.1.8",
@@ -69,7 +69,7 @@
     "*.ts": [
       "eslint --fix",
       "prettier --write",
-      "jest src/",
+      "jest",
       "git add"
     ]
   }
