@@ -36,15 +36,14 @@ describe('Authentication Routes', () => {
       };
       const expected = { message: 'User Created' };
 
-      await request(app.app)
+      const response = await request(app.app)
         .post('/api/auth/register')
         .send(user)
         .set('Accept', 'application/json')
         .expect('Content-Type', /json/)
-        .expect(201)
-        .then(response => {
-          expect(response.body).toEqual(expected);
-        });
+        .expect(201);
+
+      expect(response.body).toEqual(expected);
     });
 
     describe('email', () => {
@@ -56,15 +55,14 @@ describe('Authentication Routes', () => {
         };
         const expected = { error: '"email" must be a valid email' };
 
-        await request(app.app)
+        const response = await request(app.app)
           .post('/api/auth/register')
           .send(user)
           .set('Accept', 'application/json')
           .expect('Content-Type', /json/)
-          .expect(400)
-          .then(response => {
-            expect(response.body).toEqual(expected);
-          });
+          .expect(400);
+
+        expect(response.body).toEqual(expected);
       });
 
       it('should fail when trying to create a user when a user already exists with same email', async () => {
@@ -83,15 +81,14 @@ describe('Authentication Routes', () => {
           })
           .save();
 
-        await request(app.app)
+        const response = await request(app.app)
           .post('/api/auth/register')
           .send(user)
           .set('Accept', 'application/json')
           .expect('Content-Type', /json/)
-          .expect(409)
-          .then(response => {
-            expect(response.body).toEqual(expected);
-          });
+          .expect(409);
+
+        expect(response.body).toEqual(expected);
       });
     });
 
@@ -106,15 +103,14 @@ describe('Authentication Routes', () => {
           error: '"username" length must be at least 6 characters long',
         };
 
-        await request(app.app)
+        const response = await request(app.app)
           .post('/api/auth/register')
           .send(user)
           .set('Accept', 'application/json')
           .expect('Content-Type', /json/)
-          .expect(400)
-          .then(response => {
-            expect(response.body).toEqual(expected);
-          });
+          .expect(400);
+
+        expect(response.body).toEqual(expected);
       });
 
       it('should fail when trying to create a user when a user already exists with same username', async () => {
@@ -130,15 +126,14 @@ describe('Authentication Routes', () => {
           .create({ ...user, email: 'nottheright@email.com' })
           .save();
 
-        await request(app.app)
+        const response = await request(app.app)
           .post('/api/auth/register')
           .send(user)
           .set('Accept', 'application/json')
           .expect('Content-Type', /json/)
-          .expect(409)
-          .then(response => {
-            expect(response.body).toEqual(expected);
-          });
+          .expect(409);
+
+        expect(response.body).toEqual(expected);
       });
     });
 
@@ -160,15 +155,14 @@ describe('Authentication Routes', () => {
         .create(user)
         .save();
 
-      await request(app.app)
+      const response = await request(app.app)
         .post('/api/auth/register')
         .send(user)
         .set('Accept', 'application/json')
         .expect('Content-Type', /json/)
-        .expect(409)
-        .then(response => {
-          expect(response.body).toEqual(expected);
-        });
+        .expect(409);
+
+      expect(response.body).toEqual(expected);
     });
 
     it('should fail when trying to create a user with a password that doesnt meet the legnth requirement', async () => {
@@ -181,15 +175,14 @@ describe('Authentication Routes', () => {
         error: `"password" with value "${user.password}" fails to match the required pattern: /^[a-zA-Z0-9]{6,50}$/`,
       };
 
-      await request(app.app)
+      const response = await request(app.app)
         .post('/api/auth/register')
         .send(user)
         .set('Accept', 'application/json')
         .expect('Content-Type', /json/)
-        .expect(400)
-        .then(response => {
-          expect(response.body).toEqual(expected);
-        });
+        .expect(400);
+
+      expect(response.body).toEqual(expected);
     });
   });
 
@@ -210,26 +203,25 @@ describe('Authentication Routes', () => {
       delete userInDB.hashPassword;
       delete userInDB.password;
 
-      await request(app.app)
+      const response = await request(app.app)
         .post('/api/auth/login')
         .send(user)
         .set('Accept', 'application/json')
         .expect('Content-Type', /json/)
-        .expect(200)
-        .then(response => {
-          const [cookie] = response.header['set-cookie'];
-          // User entity's createdAt and updatedAt properties are of type Date
-          // call toISOString to get convert them to a string to compare
-          const expectResponse = {
-            user: {
-              ...userInDB,
-              createdAt: userInDB.createdAt.toISOString(),
-              updatedAt: userInDB.updatedAt.toISOString(),
-            },
-          };
-          expect(response.body).toStrictEqual(expectResponse);
-          expect(cookie).toMatch(/^stackSessionId/);
-        });
+        .expect(200);
+      const [cookie] = response.header['set-cookie'];
+      // User entity's createdAt and updatedAt properties are of type Date
+      // call toISOString to get convert them to a string to compare
+      const expectResponse = {
+        user: {
+          ...userInDB,
+          createdAt: userInDB.createdAt.toISOString(),
+          updatedAt: userInDB.updatedAt.toISOString(),
+        },
+      };
+
+      expect(response.body).toStrictEqual(expectResponse);
+      expect(cookie).toMatch(/^stackSessionId/);
     });
 
     it('should fail when there is no user in the db with a particallar email login', async () => {
@@ -248,18 +240,17 @@ describe('Authentication Routes', () => {
         .create(user)
         .save();
 
-      await request(app.app)
+      const response = await request(app.app)
         .post('/api/auth/login')
         .send(userTryingToLogin)
         .set('Accept', 'application/json')
         .expect('Content-Type', /json/)
-        .expect(404)
-        .then(response => {
-          const expectResponse = {
-            error: 'There is no user with that email/password combination',
-          };
-          expect(response.body).toStrictEqual(expectResponse);
-        });
+        .expect(404);
+      const expectResponse = {
+        error: 'There is no user with that email/password combination',
+      };
+
+      expect(response.body).toStrictEqual(expectResponse);
     });
 
     it('should fail when password dont match', async () => {
@@ -278,18 +269,18 @@ describe('Authentication Routes', () => {
         .create(user)
         .save();
 
-      await request(app.app)
+      const response = await request(app.app)
         .post('/api/auth/login')
         .send(userTryingToLogin)
         .set('Accept', 'application/json')
         .expect('Content-Type', /json/)
-        .expect(404)
-        .then(response => {
-          const expectResponse = {
-            error: 'There is no user with that email/password combination',
-          };
-          expect(response.body).toStrictEqual(expectResponse);
-        });
+        .expect(404);
+
+      const expectResponse = {
+        error: 'There is no user with that email/password combination',
+      };
+
+      expect(response.body).toStrictEqual(expectResponse);
     });
   });
 
