@@ -69,7 +69,6 @@
     "*.ts": [
       "eslint --fix",
       "prettier --write",
-      "jest",
       "git add"
     ]
   }

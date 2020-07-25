@@ -303,4 +303,67 @@ describe('Workspace Routes', () => {
       expect(response.body).toEqual(expected);
     });
   });
+
+  describe('GET /api/workspaces', () => {
+    it('should successfully get a users workspaces when workspaces.length > 0', async () => {
+      const workspaceOne = {
+        name: 'get workpace one',
+        owner: userInDB.id,
+        teammates: [userInDB],
+      };
+      const workspaceTwo = {
+        name: 'get workpace two',
+        owner: userInDB.id,
+        teammates: [userInDB],
+      };
+      const workspaceOneToSave = connection
+        .getRepository<Workspace>(Workspace)
+        .create(workspaceOne as any);
+      const workspaceTwoToSave = connection
+        .getRepository<Workspace>(Workspace)
+        .create(workspaceTwo as any);
+      // ts yelling at me when trying to chain save after create
+      // not sure why
+      const workspaceOneInDB: any = await connection
+        .getRepository<Workspace>(Workspace)
+        .save(workspaceOneToSave);
+      const workspaceTwoInDB: any = await connection
+        .getRepository<Workspace>(Workspace)
+        .save(workspaceTwoToSave);
+      const response = await request(app.app)
+        .get('/api/workspaces')
+        .set('Cookie', sessionCookie)
+        .set('Accept', 'applicatiion/json')
+        .expect('Content-Type', /json/)
+        .expect(200);
+      const expected = {
+        workspaces: [
+          {
+            id: workspaceOneInDB.id,
+            name: workspaceOneInDB.name,
+            ownerId: workspaceOneInDB.owner,
+          },
+          {
+            id: workspaceTwoInDB.id,
+            name: workspaceTwoInDB.name,
+            ownerId: workspaceTwoInDB.owner,
+          },
+        ],
+      };
+
+      expect(response.body).toEqual(expected);
+    });
+
+    it('should successfully return an empty array when workspaces.length === 0', async () => {
+      const response = await request(app.app)
+        .get('/api/workspaces')
+        .set('Cookie', sessionCookie)
+        .set('Accept', 'applicatiion/json')
+        .expect('Content-Type', /json/)
+        .expect(200);
+      const expected = { workspaces: [] };
+
+      expect(response.body).toEqual(expected);
+    });
+  });
 });
