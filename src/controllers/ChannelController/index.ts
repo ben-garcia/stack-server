@@ -152,12 +152,10 @@ class ChannelController implements Controller {
       const validatedChannel = await this.schema.validateAsync(
         req.body.channel
       );
-
       // get the user id
       const { userId, username } = req.session!;
       // store the users to add as members
       const members: User[] = [];
-
       // get the creator of the channel
       const user = await this.userService.getById(userId);
 
@@ -198,6 +196,14 @@ class ChannelController implements Controller {
         delete channel.workspace;
         // remove the members before sending to the client
         delete channel?.members;
+
+        // remove members passwords
+        channel.members.forEach((innerUser: User) => {
+          // eslint-disable-next-line no-param-reassign
+          delete innerUser.hashPassword;
+          // eslint-disable-next-line no-param-reassign
+          delete innerUser.password;
+        });
 
         // Having added a another channel, delete channels from Redis
         // which will cause the server to qeury the db for the updated list
