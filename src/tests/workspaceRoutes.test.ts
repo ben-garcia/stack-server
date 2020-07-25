@@ -366,4 +366,72 @@ describe('Workspace Routes', () => {
       expect(response.body).toEqual(expected);
     });
   });
+
+  describe('GET /api/workspaces/:workspaceId', () => {
+    it('should successfully get a workspaces teammates when workspaces.teammates > 1', async () => {
+      const anotherUser = {
+        email: 'useranother@email.com',
+        password: 'useranother',
+        username: 'user755166',
+      };
+
+      const anotherUserInDB = await connection
+        .getRepository<User>(User)
+        .create(anotherUser)
+        .save();
+
+      const workspace = {
+        name: 'workspace in get',
+        owner: userInDB.id,
+        teammates: [userInDB, anotherUserInDB],
+      };
+      const workspaceToSave = connection
+        .getRepository<Workspace>(Workspace)
+        .create(workspace as any);
+      const workspaceInDB: any = await connection
+        .getRepository<Workspace>(Workspace)
+        .save(workspaceToSave);
+      const response = await request(app.app)
+        .get(`/api/workspaces/${workspaceInDB.id}`)
+        .set('Cookie', sessionCookie)
+        .set('Accept', 'applicatiion/json')
+        .expect('Content-Type', /json/)
+        .expect(200);
+      const expected = {
+        message: 'Workspace teammates found',
+        teammates: [
+          { id: userInDB.id, username: userInDB.username },
+          { id: anotherUserInDB.id, username: anotherUserInDB.username },
+        ],
+      };
+
+      expect(response.body).toEqual(expected);
+    });
+
+    it('should successfully get a teammates array with only 1 teammate(the user) when workspaces.teammates === 1', async () => {
+      const workspace = {
+        name: 'workspace in get',
+        owner: userInDB.id,
+        teammates: [userInDB],
+      };
+      const workspaceToSave = connection
+        .getRepository<Workspace>(Workspace)
+        .create(workspace as any);
+      const workspaceInDB: any = await connection
+        .getRepository<Workspace>(Workspace)
+        .save(workspaceToSave);
+      const response = await request(app.app)
+        .get(`/api/workspaces/${workspaceInDB.id}`)
+        .set('Cookie', sessionCookie)
+        .set('Accept', 'applicatiion/json')
+        .expect('Content-Type', /json/)
+        .expect(200);
+      const expected = {
+        message: 'Workspace teammates found',
+        teammates: [{ id: userInDB.id, username: userInDB.username }],
+      };
+
+      expect(response.body).toEqual(expected);
+    });
+  });
 });
