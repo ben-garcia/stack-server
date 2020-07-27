@@ -48,8 +48,8 @@ class ChannelService {
     workspaceId: string
   ): Promise<Channel[]> {
     return this.channelRepository.query(`
-        SELECT * FROM channels INNER JOIN channel_members ON channels.id = channel_members.channel and channel_members.user = ${userId} and channels."workspaceId" = ${workspaceId} ORDER BY channels.name
-			`);
+		    SELECT * FROM channels INNER JOIN channel_members ON channels.id = channel_members.channel AND channel_members.user = ${userId} AND channels."workspaceId" = ${workspaceId} ORDER BY channels.name
+    `);
   }
 
   async getMembersByChannelId(channelId: number): Promise<Channel | undefined> {

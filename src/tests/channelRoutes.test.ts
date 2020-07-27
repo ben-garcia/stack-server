@@ -72,6 +72,7 @@ describe('Channel Routes', () => {
       .getRepository<Workspace>(Workspace)
       .save(workspaceToSave);
 
+    // get the session cookie
     const response = await request(app.app)
       .post('/api/auth/login')
       .send(user)
@@ -88,8 +89,10 @@ describe('Channel Routes', () => {
   });
 
   afterAll(async () => {
+    await connection
+      .getRepository<Workspace>(Workspace)
+      .query('DELETE FROM workspaces');
     await connection.getRepository<User>(User).query('DELETE FROM users');
-    await connection.getRepository<User>(User).query('DELETE FROM workspaces');
     await connection.close();
   });
 
@@ -120,7 +123,7 @@ describe('Channel Routes', () => {
         .post('/api/channels')
         .send({ channel })
         .set('Cookie', sessionCookie)
-        .set('Accept', 'applicatiion/json')
+        .set('Accept', 'application/json')
         .expect('Content-Type', /json/)
         .expect(201);
       const expected = {
@@ -164,8 +167,8 @@ describe('Channel Routes', () => {
         .create(user)
         .save();
 
-      delete channelUser2InDB.hashPassword;
       delete channelUser2InDB.password;
+      delete channelUser2InDB.hashPassword;
 
       const channel = {
         description: 'first channel description',
@@ -178,7 +181,7 @@ describe('Channel Routes', () => {
         .post('/api/channels')
         .send({ channel })
         .set('Cookie', sessionCookie)
-        .set('Accept', 'applicatiion/json')
+        .set('Accept', 'application/json')
         .expect('Content-Type', /json/)
         .expect(201);
       const expected = {
@@ -236,7 +239,7 @@ describe('Channel Routes', () => {
         .post('/api/channels')
         .send({ channel })
         .set('Cookie', sessionCookie)
-        .set('Accept', 'applicatiion/json')
+        .set('Accept', 'application/json')
         .expect('Content-Type', /json/)
         .expect(201);
       const expected = {
@@ -262,100 +265,259 @@ describe('Channel Routes', () => {
 
       expect(response.body).toEqual(expected);
     });
+  });
 
-    describe('PUT /api/channels/:channelId', () => {
-      let channelInDB: any;
+  describe('PUT /api/channels/:channelId', () => {
+    let channelInDB: any;
 
-      beforeEach(async () => {
-        const channel = {
-          description: 'second channel description',
-          name: 'second channel test',
-          members: [userInDB.username],
-          private: false,
-          workspace: workspaceInDB.id,
-        };
-        const channelToSave = connection
-          .getRepository<Channel>(Channel)
-          .create(channel as any);
+    beforeEach(async () => {
+      const channel = {
+        description: 'second channel description',
+        name: 'second channel test',
+        members: [userInDB.username],
+        private: false,
+        workspace: workspaceInDB.id,
+      };
+      const channelToSave = connection
+        .getRepository<Channel>(Channel)
+        .create(channel as any);
 
-        channelInDB = await connection
-          .getRepository<Channel>(Channel)
-          .save(channelToSave);
-      });
+      channelInDB = await connection
+        .getRepository<Channel>(Channel)
+        .save(channelToSave);
+    });
 
-      it('should successfully update channel.members when req.body.members > 0', async () => {
-        const body = {
-          members: [userInDB.username],
-        };
-        const response = await request(app.app)
-          .put(`/api/channels/${channelInDB.id}`)
-          .send(body)
-          .set('Cookie', sessionCookie)
-          .set('Accept', 'applicatiion/json')
-          .expect('Content-Type', /json/)
-          .expect(200);
-        const expected = {
-          message: 'Channel members have been updated',
-        };
+    it('should successfully update channel.members when req.body.members > 0', async () => {
+      const body = {
+        members: [userInDB.username],
+      };
+      const response = await request(app.app)
+        .put(`/api/channels/${channelInDB.id}`)
+        .send(body)
+        .set('Cookie', sessionCookie)
+        .set('Accept', 'application/json')
+        .expect('Content-Type', /json/)
+        .expect(200);
+      const expected = {
+        message: 'Channel members have been updated',
+      };
 
-        expect(response.body).toStrictEqual(expected);
-      });
+      expect(response.body).toStrictEqual(expected);
+    });
 
-      it('should successfully update channel.topic', async () => {
-        const body = {
-          topic: 'new topic',
-        };
-        const response = await request(app.app)
-          .put(`/api/channels/${channelInDB.id}`)
-          .send(body)
-          .set('Cookie', sessionCookie)
-          .set('Accept', 'applicatiion/json')
-          .expect('Content-Type', /json/)
-          .expect(200);
-        const expected = {
-          message: 'Channel description/topic changed',
-        };
+    it('should successfully update channel.topic', async () => {
+      const body = {
+        topic: 'new topic',
+      };
+      const response = await request(app.app)
+        .put(`/api/channels/${channelInDB.id}`)
+        .send(body)
+        .set('Cookie', sessionCookie)
+        .set('Accept', 'application/json')
+        .expect('Content-Type', /json/)
+        .expect(200);
+      const expected = {
+        message: 'Channel description/topic changed',
+      };
 
-        expect(response.body).toStrictEqual(expected);
-      });
+      expect(response.body).toStrictEqual(expected);
+    });
 
-      it('should successfully update channel.description', async () => {
-        const body = {
-          description: 'new description',
-        };
-        const response = await request(app.app)
-          .put(`/api/channels/${channelInDB.id}`)
-          .send(body)
-          .set('Cookie', sessionCookie)
-          .set('Accept', 'applicatiion/json')
-          .expect('Content-Type', /json/)
-          .expect(200);
-        const expected = {
-          message: 'Channel description/topic changed',
-        };
+    it('should successfully update channel.description', async () => {
+      const body = {
+        description: 'new description',
+      };
+      const response = await request(app.app)
+        .put(`/api/channels/${channelInDB.id}`)
+        .send(body)
+        .set('Cookie', sessionCookie)
+        .set('Accept', 'application/json')
+        .expect('Content-Type', /json/)
+        .expect(200);
+      const expected = {
+        message: 'Channel description/topic changed',
+      };
 
-        expect(response.body).toStrictEqual(expected);
-      });
+      expect(response.body).toStrictEqual(expected);
+    });
 
-      it('should fail when sending topic and description in req.body', async () => {
-        const body = {
-          members: ['testtest', 'testantohertest'],
-          description: 'new description',
-          topic: 'best topic',
-        };
-        const response = await request(app.app)
-          .put(`/api/channels/${channelInDB.id}`)
-          .send(body)
-          .set('Cookie', sessionCookie)
-          .set('Accept', 'applicatiion/json')
-          .expect('Content-Type', /json/)
-          .expect(400);
-        const expected = {
-          message: 'Something went wrong',
-        };
+    it('should fail when sending topic and description in req.body', async () => {
+      const body = {
+        members: ['testtest', 'testantohertest'],
+        description: 'new description',
+        topic: 'best topic',
+      };
+      const response = await request(app.app)
+        .put(`/api/channels/${channelInDB.id}`)
+        .send(body)
+        .set('Cookie', sessionCookie)
+        .set('Accept', 'application/json')
+        .expect('Content-Type', /json/)
+        .expect(400);
+      const expected = {
+        message: 'Something went wrong',
+      };
 
-        expect(response.body).toStrictEqual(expected);
-      });
+      expect(response.body).toStrictEqual(expected);
+    });
+  });
+
+  describe('GET /api/channels/channelId', () => {
+    it('should return an array of members when members.length > 1', async () => {
+      const otherUser = {
+        username: 'bestuserna',
+        password: 'password15156',
+        email: 'test@test.com',
+      };
+      const otherUserInDB = await connection
+        .getRepository<User>(User)
+        .create(otherUser)
+        .save();
+      const channel = {
+        name: 'name for channel',
+        description: 'description for channel',
+        private: false,
+        workspace: workspaceInDB.id,
+        members: [userInDB, otherUserInDB],
+      };
+      const channelToSave = connection
+        .getRepository<Channel>(Channel)
+        .create(channel);
+      const channelInDB: any = await connection
+        .getRepository<Channel>(Channel)
+        .save(channelToSave);
+      const response = await request(app.app)
+        .get(`/api/channels/${channelInDB.id}`)
+        .set('Cookie', sessionCookie)
+        .set('Accept', 'applicatiion/json')
+        .expect('Content-Type', /json/)
+        .expect(200);
+      const expected = {
+        members: [
+          { id: userInDB.id, username: userInDB.username },
+          { id: otherUserInDB.id, username: otherUserInDB.username },
+        ],
+      };
+
+      expect(response.body).toEqual(expected);
+    });
+
+    it('should return array of members with ONLY the user who created it when members.length === 1', async () => {
+      const channel = {
+        name: 'name for channel',
+        description: 'description for channel',
+        private: false,
+        workspace: workspaceInDB.id,
+        members: [userInDB],
+      };
+      const channelToSave = connection
+        .getRepository<Channel>(Channel)
+        .create(channel);
+      const channelInDB: any = await connection
+        .getRepository<Channel>(Channel)
+        .save(channelToSave);
+      const response = await request(app.app)
+        .get(`/api/channels/${channelInDB.id}`)
+        .set('Cookie', sessionCookie)
+        .set('Accept', 'applicatiion/json')
+        .expect('Content-Type', /json/)
+        .expect(200);
+      const expected = {
+        members: [{ id: userInDB.id, username: userInDB.username }],
+      };
+
+      expect(response.body).toEqual(expected);
+    });
+  });
+
+  describe('GET /api/channels?workspace=workspaceId', () => {
+    it('should return an array of channels when channels.length > 0', async () => {
+      const channel1 = {
+        name: 'name for channel',
+        description: 'description for channel',
+        private: false,
+        members: [userInDB],
+        workspace: workspaceInDB.id,
+      };
+      const channel1ToSave = connection
+        .getRepository<Channel>(Channel)
+        .create(channel1);
+      const channel1InDB: any = await connection
+        .getRepository<Channel>(Channel)
+        .save(channel1ToSave);
+      const channel2 = {
+        name: 'other for channel',
+        description: 'jga0ga0jg for channel',
+        private: false,
+        members: [userInDB],
+        workspace: workspaceInDB.id,
+      };
+      const channel2ToSave = connection
+        .getRepository<Channel>(Channel)
+        .create(channel2);
+      const channel2InDB: any = await connection
+        .getRepository<Channel>(Channel)
+        .save(channel2ToSave);
+
+      workspaceInDB.channels = [channel1InDB, channel2InDB];
+
+      await connection.getRepository<Workspace>(Workspace).save(workspaceInDB);
+
+      const response = await request(app.app)
+        .get(`/api/channels?workspaceId=${workspaceInDB.id}`)
+        .set('Cookie', sessionCookie)
+        .set('Accept', 'applicatiion/json')
+        .expect('Content-Type', /json/)
+        .expect(200);
+
+      delete channel1InDB.members;
+      delete channel2InDB.members;
+
+      channel1InDB.workspaceId = channel1InDB.workspace;
+      delete channel1InDB.workspace;
+      channel2InDB.workspaceId = channel2InDB.workspace;
+      delete channel2InDB.workspace;
+
+      const expected = {
+        channels: [
+          {
+            ...channel1InDB,
+            channel: channel1InDB.id,
+            createdAt: channel1InDB.createdAt.toISOString(),
+            updatedAt: channel1InDB.updatedAt.toISOString(),
+            user: userInDB.id,
+            workspaceId: channel1InDB.workspaceId,
+          },
+          {
+            ...channel2InDB,
+            channel: channel2InDB.id,
+            createdAt: channel2InDB.createdAt.toISOString(),
+            updatedAt: channel2InDB.updatedAt.toISOString(),
+            user: userInDB.id,
+            workspaceId: channel2InDB.workspaceId,
+          },
+        ],
+      };
+
+      expect(response.body).toStrictEqual(expected);
+    });
+
+    it('should return an empty array of channels when channels.length === 0', async () => {
+      workspaceInDB.channels = [];
+
+      await connection.getRepository<Workspace>(Workspace).save(workspaceInDB);
+
+      const response = await request(app.app)
+        .get(`/api/channels?workspaceId=${workspaceInDB.id}`)
+        .set('Cookie', sessionCookie)
+        .set('Accept', 'applicatiion/json')
+        .expect('Content-Type', /json/)
+        .expect(200);
+      const expected = {
+        channels: [],
+      };
+
+      expect(response.body).toStrictEqual(expected);
     });
   });
 });
