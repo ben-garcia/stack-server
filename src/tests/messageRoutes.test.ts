@@ -116,7 +116,7 @@ describe('Message Routes', () => {
   afterAll(async () => {
     await connection
       .getRepository<Channel>(Channel)
-      .query('DELETE FROM chnanels');
+      .query('DELETE FROM channels');
     await connection
       .getRepository<Workspace>(Workspace)
       .query('DELETE FROM workspaces');
