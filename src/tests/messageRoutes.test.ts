@@ -154,4 +154,77 @@ describe('Message Routes', () => {
       expect(received).toStrictEqual(expected);
     });
   });
+
+  describe('GET /api/messages?channelId=channelId', () => {
+    it('should successfully return an array of messages when messages.length > 0', async () => {
+      const message = {
+        channel: channelInDB.id,
+        content: 'GET message 1 content',
+        user: userInDB.id,
+      };
+      const message2 = {
+        channel: channelInDB.id,
+        content: 'GET message 2 content',
+        user: userInDB.id,
+      };
+      const messageToSave = connection
+        .getRepository<Message>(Message)
+        .create(message as any);
+      const messageInDB: any = await connection
+        .getRepository<Message>(Message)
+        .save(messageToSave);
+
+      const message2ToSave = connection
+        .getRepository<Message>(Message)
+        .create(message2 as any);
+      const message2InDB: any = await connection
+        .getRepository<Message>(Message)
+        .save(message2ToSave);
+
+      messageInDB.updatedAt = messageInDB.updatedAt.toISOString();
+      messageInDB.createdAt = messageInDB.createdAt.toISOString();
+      message2InDB.updatedAt = message2InDB.updatedAt.toISOString();
+      message2InDB.createdAt = message2InDB.createdAt.toISOString();
+
+      delete messageInDB.channel;
+      delete message2InDB.channel;
+
+      messageInDB.user = { username: userInDB.username };
+      message2InDB.user = { username: userInDB.username };
+
+      channelInDB.messages = [messageInDB, message2InDB];
+
+      await connection.getRepository<Channel>(Channel).save(channelInDB);
+
+      const response = await request(app.app)
+        .get(`/api/messages?channelId=${channelInDB.id}`)
+        .set('Cookie', sessionCookie)
+        .set('Accept', 'application/json')
+        .expect('Content-Type', /json/)
+        .expect(200);
+      const expected = {
+        messages: channelInDB.messages,
+      };
+
+      expect(response.body).toEqual(expected);
+    });
+
+    it('should successfully return an empty array when messages.length === 0', async () => {
+      channelInDB.messages = [];
+
+      await connection.getRepository<Channel>(Channel).save(channelInDB);
+
+      const response = await request(app.app)
+        .get(`/api/messages?channelId=${channelInDB.id}`)
+        .set('Cookie', sessionCookie)
+        .set('Accept', 'application/json')
+        .expect('Content-Type', /json/)
+        .expect(200);
+      const expected = {
+        messages: [],
+      };
+
+      expect(response.body).toEqual(expected);
+    });
+  });
 });
