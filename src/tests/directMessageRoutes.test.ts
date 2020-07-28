@@ -136,4 +136,86 @@ describe('DirectMessage Routes', () => {
       expect(received).toStrictEqual(expected);
     });
   });
+
+  describe('GET /api/direct-messages?teammateId=teammateId&workspaceId=workspaceId', () => {
+    it('should successfully return an array of direct messages when directMessages.length > 0', async () => {
+      const otherUser = {
+        email: 'direct-messageuser@email.com',
+        username: 'ajgkajkgdirectmessageuser',
+        password: 'directmjijagessageuser5266',
+      };
+
+      const otherUserInDB = await connection
+        .getRepository<User>(User)
+        .create(otherUser)
+        .save();
+      const message = {
+        content: 'GET direct direct message 1 content',
+        workspaceId: workspaceInDB.id,
+        user: userInDB.id,
+      };
+      const message2 = {
+        content: 'GET direct direct message 2 content',
+        workspaceId: workspaceInDB.id,
+        user: otherUserInDB.id,
+      };
+      const messageToSave = connection
+        .getRepository<DirectMessage>(DirectMessage)
+        .create(message as any);
+      const messageInDB: any = await connection
+        .getRepository<DirectMessage>(DirectMessage)
+        .save(messageToSave);
+
+      const message2ToSave = connection
+        .getRepository<DirectMessage>(DirectMessage)
+        .create(message2 as any);
+      const message2InDB: any = await connection
+        .getRepository<DirectMessage>(DirectMessage)
+        .save(message2ToSave);
+
+      messageInDB.updatedAt = messageInDB.updatedAt.toISOString();
+      messageInDB.createdAt = messageInDB.createdAt.toISOString();
+      message2InDB.updatedAt = message2InDB.updatedAt.toISOString();
+      message2InDB.createdAt = message2InDB.createdAt.toISOString();
+
+      delete messageInDB.channel;
+      delete message2InDB.channel;
+
+      messageInDB.user = { username: userInDB.username };
+      message2InDB.user = { username: userInDB.username };
+
+      const response = await request(app.app)
+        .get(
+          `/api/direct-messages?teammateId=${otherUserInDB.id}&workspaceId=${workspaceInDB.id}`
+        )
+        .set('Cookie', sessionCookie)
+        .set('Accept', 'application/json')
+        .expect('Content-Type', /json/)
+        .expect(200);
+      const expected = {
+        directMessages: [
+          { ...messageInDB },
+          { ...message2InDB, user: { username: otherUserInDB.username } },
+        ],
+      };
+
+      expect(response.body).toEqual(expected);
+    });
+
+    it('should successfully return an empty array when messages.length === 0', async () => {
+      const response = await request(app.app)
+        .get(
+          `/api/direct-messages?teammateId=${userInDB.id}&workspaceId=${workspaceInDB.id}`
+        )
+        .set('Cookie', sessionCookie)
+        .set('Accept', 'application/json')
+        .expect('Content-Type', /json/)
+        .expect(200);
+      const expected = {
+        directMessages: [],
+      };
+
+      expect(response.body).toEqual(expected);
+    });
+  });
 });
