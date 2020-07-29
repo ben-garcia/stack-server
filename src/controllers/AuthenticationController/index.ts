@@ -2,6 +2,7 @@ import express, { Request, Response, Router } from 'express';
 import Joi, { ObjectSchema } from '@hapi/joi';
 import bcrypt from 'bcrypt';
 
+import { checkUserSession } from '../../middlewares';
 import { UserService } from '../../services';
 import { Controller } from '../types';
 
@@ -38,7 +39,7 @@ class AuthenticationController implements Controller {
   private initializeRoutes(): void {
     this.router.post('/register', this.registerUser);
     this.router.post('/login', this.loginUser);
-    this.router.post('/logout', this.logoutUser);
+    this.router.post('/logout', checkUserSession, this.logoutUser);
   }
 
   public registerUser = async (req: Request, res: Response): Promise<void> => {

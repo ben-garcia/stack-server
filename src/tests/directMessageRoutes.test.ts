@@ -107,6 +107,25 @@ describe('DirectMessage Routes', () => {
   });
 
   describe('POST /api/direct-messages', () => {
+    it('should fail when request is missing session cookie', async () => {
+      const message = {
+        content: 'direct message 1 content',
+        workspaceId: workspaceInDB.id,
+        user: userInDB.id,
+      };
+      const response = await request(app.app)
+        .post('/api/direct-messages')
+        .send({ message })
+        .set('Accept', 'application/json')
+        .expect('Content-Type', /json/)
+        .expect(401);
+      const expected = {
+        error: 'Unauthorized',
+      };
+
+      expect(response.body).toStrictEqual(expected);
+    });
+
     it('should successfully create a direct message', async () => {
       const message = {
         content: 'direct message 1 content',
@@ -138,6 +157,19 @@ describe('DirectMessage Routes', () => {
   });
 
   describe('GET /api/direct-messages?teammateId=teammateId&workspaceId=workspaceId', () => {
+    it('should fail when request is missing session cookie', async () => {
+      const response = await request(app.app)
+        .get('/api/direct-messages?teammateId=1&workspaceId=1')
+        .set('Accept', 'application/json')
+        .expect('Content-Type', /json/)
+        .expect(401);
+      const expected = {
+        error: 'Unauthorized',
+      };
+
+      expect(response.body).toStrictEqual(expected);
+    });
+
     it('should successfully return an array of direct messages when directMessages.length > 0', async () => {
       const otherUser = {
         email: 'direct-messageuser@email.com',

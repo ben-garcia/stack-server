@@ -285,23 +285,33 @@ describe('Authentication Routes', () => {
   });
 
   describe('POST /api/auth/logout', () => {
+    it('should fail when session cookie is missing', async () => {
+      const logoutResponse = await request(app.app)
+        .post('/api/auth/logout')
+        .set('Accept', 'application/json')
+        .expect('Content-Type', /json/)
+        .expect(401);
+      const expectResponse = {
+        error: 'Unauthorized',
+      };
+
+      expect(logoutResponse.body).toStrictEqual(expectResponse);
+    });
+
     it('should successfully logout', async () => {
       const user = {
         email: 'exampleemail@exemail.com',
         username: 'user54929',
         password: 'bestpassword',
       };
-
       const userInDB = await connection
         .getRepository<User>(User)
         .create(user)
         .save();
-
       const loginResponse = await request(app.app)
         .post('/api/auth/login')
         .send(user)
         .set('Accept', 'application/json');
-
       const logoutResponse = await request(app.app)
         .post('/api/auth/logout')
         .set('Cookie', loginResponse.header['set-cookie'])

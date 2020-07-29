@@ -97,6 +97,27 @@ describe('Channel Routes', () => {
   });
 
   describe('POST /api/channels', () => {
+    it('should fail when request is missing session cookie', async () => {
+      const channel = {
+        description: 'first channel description',
+        name: 'first channel test',
+        members: ['test'],
+        private: false,
+        workspace: workspaceInDB.id,
+      };
+      const response = await request(app.app)
+        .post('/api/channels')
+        .send({ channel })
+        .set('Accept', 'application/json')
+        .expect('Content-Type', /json/)
+        .expect(401);
+      const expected = {
+        error: 'Unauthorized',
+      };
+
+      expect(response.body).toStrictEqual(expected);
+    });
+
     it('should successfully create a channel with members > 1 and private === false', async () => {
       const user = {
         email: 'channel user',
@@ -287,6 +308,23 @@ describe('Channel Routes', () => {
         .save(channelToSave);
     });
 
+    it('should fail when request is missing session cookie', async () => {
+      const body = {
+        members: [userInDB.username],
+      };
+      const response = await request(app.app)
+        .put(`/api/channels/${channelInDB.id}`)
+        .send(body)
+        .set('Accept', 'application/json')
+        .expect('Content-Type', /json/)
+        .expect(401);
+      const expected = {
+        error: 'Unauthorized',
+      };
+
+      expect(response.body).toStrictEqual(expected);
+    });
+
     it('should successfully update channel.members when req.body.members > 0', async () => {
       const body = {
         members: [userInDB.username],
@@ -363,6 +401,19 @@ describe('Channel Routes', () => {
   });
 
   describe('GET /api/channels/channelId', () => {
+    it('should fail when request is missing session cookie', async () => {
+      const response = await request(app.app)
+        .get('/api/channels/1')
+        .set('Accept', 'applicatiion/json')
+        .expect('Content-Type', /json/)
+        .expect(401);
+      const expected = {
+        error: 'Unauthorized',
+      };
+
+      expect(response.body).toStrictEqual(expected);
+    });
+
     it('should return an array of members when members.length > 1', async () => {
       const otherUser = {
         username: 'bestuserna',
@@ -431,6 +482,20 @@ describe('Channel Routes', () => {
   });
 
   describe('GET /api/channels?workspace=workspaceId', () => {
+    it('should fail when request is missing session cookie', async () => {
+      const response = await request(app.app)
+        .get(`/api/channels?workspaceId=${workspaceInDB.id}`)
+        .set('Accept', 'applicatiion/json')
+        .expect('Content-Type', /json/)
+        .expect(401);
+
+      const expected = {
+        error: 'Unauthorized',
+      };
+
+      expect(response.body).toStrictEqual(expected);
+    });
+
     it('should return an array of channels when channels.length > 0', async () => {
       const channel1 = {
         name: 'name for channel',

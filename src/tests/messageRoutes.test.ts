@@ -125,6 +125,25 @@ describe('Message Routes', () => {
   });
 
   describe('POST /api/messages', () => {
+    it('should fail when request is missing session cookie', async () => {
+      const message = {
+        channel: channelInDB.id,
+        content: 'message 1 content',
+        user: userInDB.id,
+      };
+      const response = await request(app.app)
+        .post('/api/messages')
+        .send({ message })
+        .set('Accept', 'application/json')
+        .expect('Content-Type', /json/)
+        .expect(401);
+      const expected = {
+        error: 'Unauthorized',
+      };
+
+      expect(response.body).toStrictEqual(expected);
+    });
+
     it('should successfully create a message', async () => {
       const message = {
         channel: channelInDB.id,
@@ -156,6 +175,19 @@ describe('Message Routes', () => {
   });
 
   describe('GET /api/messages?channelId=channelId', () => {
+    it('should fail when request is missing session cookie', async () => {
+      const response = await request(app.app)
+        .get(`/api/messages?channelId=${channelInDB.id}`)
+        .set('Accept', 'application/json')
+        .expect('Content-Type', /json/)
+        .expect(401);
+      const expected = {
+        error: 'Unauthorized',
+      };
+
+      expect(response.body).toStrictEqual(expected);
+    });
+
     it('should successfully return an array of messages when messages.length > 0', async () => {
       const message = {
         channel: channelInDB.id,

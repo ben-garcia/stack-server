@@ -61,6 +61,24 @@ describe('Workspace Routes', () => {
   });
 
   describe('POST /api/workspaces', () => {
+    it('should fail when request is missing session cookie', async () => {
+      const workspace = {
+        name: 'first workpace test',
+        owner: userInDB.id,
+      };
+      const response = await request(app.app)
+        .post('/api/workspaces')
+        .send(workspace)
+        .set('Accept', 'applicatiion/json')
+        .expect('Content-Type', /json/)
+        .expect(401);
+      const expected = {
+        error: 'Unauthorized',
+      };
+
+      expect(response.body).toStrictEqual(expected);
+    });
+
     it('should successfully create a workspace', async () => {
       const workspace = {
         name: 'first workpace test',
@@ -106,21 +124,36 @@ describe('Workspace Routes', () => {
   });
 
   describe('PUT /api/workspaces/:workspaceId', () => {
+    it('should fail when request is missing session cookie', async () => {
+      const teammatesToAdd = ['test', 'fails'];
+      const response = await request(app.app)
+        .put('/api/workspaces/1')
+        .send(teammatesToAdd)
+        .set('Accept', 'applicatiion/json')
+        .expect('Content-Type', /json/)
+        .expect(401);
+      const expected = {
+        error: 'Unauthorized',
+      };
+
+      expect(response.body).toEqual(expected);
+    });
+
     it('should successfully update a workspace.teammates when teammate usernames are in db', async () => {
       const workspace = {
-        name: 'third workpace test',
+        name: 'anothertesting workpace test',
         owner: userInDB.id,
         teammates: [userInDB],
       };
       const userOne = {
-        email: 'userOne@email.com',
-        password: 'userOne',
-        username: 'userOne',
+        email: 'useruseusur@email.com',
+        password: 'iajgiajg',
+        username: 'ojagah45j3j5',
       };
       const userTwo = {
-        email: 'userTwo@email.com',
-        password: 'userTwo',
-        username: 'userTwo',
+        email: 'akgjagjai@email.com',
+        password: 'userTgjiajgiajwo',
+        username: 'userTajgiaiiijgijwo',
       };
 
       // need more users in the db
@@ -305,6 +338,19 @@ describe('Workspace Routes', () => {
   });
 
   describe('GET /api/workspaces', () => {
+    it('should fail when request is missing session cookie', async () => {
+      const response = await request(app.app)
+        .get('/api/workspaces')
+        .set('Accept', 'applicatiion/json')
+        .expect('Content-Type', /json/)
+        .expect(401);
+      const expected = {
+        error: 'Unauthorized',
+      };
+
+      expect(response.body).toStrictEqual(expected);
+    });
+
     it('should successfully get a users workspaces when workspaces.length > 0', async () => {
       const workspaceOne = {
         name: 'get workpace one',
@@ -368,6 +414,19 @@ describe('Workspace Routes', () => {
   });
 
   describe('GET /api/workspaces/:workspaceId', () => {
+    it('should fail when request is missing session cookie', async () => {
+      const response = await request(app.app)
+        .get('/api/workspaces/1')
+        .set('Accept', 'applicatiion/json')
+        .expect('Content-Type', /json/)
+        .expect(401);
+      const expected = {
+        error: 'Unauthorized',
+      };
+
+      expect(response.body).toStrictEqual(expected);
+    });
+
     it('should successfully get a workspaces teammates when workspaces.teammates > 1', async () => {
       const anotherUser = {
         email: 'useranother@email.com',
