@@ -1,48 +1,29 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
-import Redis from 'ioredis';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import request from 'supertest';
-import { getRepository, Connection } from 'typeorm';
-
-import { AuthenticationController, WorkspaceController } from '../controllers';
-import { RedisService, UserService, WorkspaceService } from '../services';
 import { User, Workspace } from '../entity';
-import App from '../App';
+import { fakeUser } from './fixtures';
+import TestUtils from './utils';
 import { createTypeormConnection } from '../utils';
 
 describe('Workspace Routes', () => {
-  let app: App;
-  let connection: Connection;
+  let testUtils: TestUtils;
   // use a single user for all the tests
   let userInDB: User;
   // keep track of the session cookie
   let sessionCookie: string;
 
   beforeAll(async () => {
-    connection = await createTypeormConnection();
-    app = new App([
-      new AuthenticationController(new UserService(getRepository<User>(User))),
-      new WorkspaceController(
-        new RedisService(new Redis({ password: 'ben' })),
-        new UserService(getRepository<User>(User)),
-        new WorkspaceService(getRepository<Workspace>(Workspace))
-      ),
-    ]);
+    testUtils = new TestUtils(await createTypeormConnection());
 
-    const user = {
-      email: 'testemail@email.com',
-      username: 'testuser',
-      password: 'bestpassword',
-    };
-
-    userInDB = await connection
+    userInDB = await testUtils
+      .getConnection()
       .getRepository<User>(User)
-      .create(user)
+      .create(fakeUser.base)
       .save();
 
-    const response = await request(app.app)
+    const response = await request(testUtils.getApp())
       .post('/api/auth/login')
-      .send(user)
+      .send(fakeUser.base)
       .set('Accept', 'application/json');
 
     // eslint-disable-next-line prefer-destructuring
@@ -50,14 +31,11 @@ describe('Workspace Routes', () => {
   });
 
   afterEach(async () => {
-    await connection
-      .getRepository<Workspace>(Workspace)
-      .query('DELETE FROM workspaces');
+    await testUtils.clearTables('workspaces');
   });
 
   afterAll(async () => {
-    await connection.getRepository<User>(User).query('DELETE FROM users');
-    await connection.close();
+    await testUtils.clearTables('users', 'workspaces');
   });
 
   describe('POST /api/workspaces', () => {
@@ -66,7 +44,7 @@ describe('Workspace Routes', () => {
         name: 'first workpace test',
         owner: userInDB.id,
       };
-      const response = await request(app.app)
+      const response = await request(testUtils.getApp())
         .post('/api/workspaces')
         .send(workspace)
         .set('Accept', 'applicatiion/json')
@@ -88,7 +66,7 @@ describe('Workspace Routes', () => {
         message: 'Workspace Created',
         workspace: { name: workspace.name },
       };
-      const response = await request(app.app)
+      const response = await request(testUtils.getApp())
         .post('/api/workspaces')
         .send(workspace)
         .set('Cookie', sessionCookie)
@@ -108,7 +86,7 @@ describe('Workspace Routes', () => {
         name: 'second workpace test',
         owner: 652626,
       };
-      const response = await request(app.app)
+      const response = await request(testUtils.getApp())
         .post('/api/workspaces')
         .send(workspace)
         .set('Cookie', sessionCookie)
@@ -126,7 +104,7 @@ describe('Workspace Routes', () => {
   describe('PUT /api/workspaces/:workspaceId', () => {
     it('should fail when request is missing session cookie', async () => {
       const teammatesToAdd = ['test', 'fails'];
-      const response = await request(app.app)
+      const response = await request(testUtils.getApp())
         .put('/api/workspaces/1')
         .send(teammatesToAdd)
         .set('Accept', 'applicatiion/json')
@@ -145,53 +123,50 @@ describe('Workspace Routes', () => {
         owner: userInDB.id,
         teammates: [userInDB],
       };
-      const userOne = {
+      let userOne = {
         email: 'useruseusur@email.com',
         password: 'iajgiajg',
         username: 'ojagah45j3j5',
       };
-      const userTwo = {
+      let userTwo = {
         email: 'akgjagjai@email.com',
         password: 'userTgjiajgiajwo',
         username: 'userTajgiaiiijgijwo',
       };
-
       // need more users in the db
-      const userOneInDB = await connection
+      userOne = await testUtils
+        .getConnection()
         .getRepository<User>(User)
         .create(userOne)
         .save();
-      const userTwoInDB = await connection
+      userTwo = await testUtils
+        .getConnection()
         .getRepository<User>(User)
         .create(userTwo)
         .save();
 
-      // remove hashPasswords
-      delete userOneInDB.hashPassword;
-      delete userTwoInDB.hashPassword;
-
-      // remove passwords
-      delete userOneInDB.password;
-      delete userTwoInDB.password;
-
-      // change 'createdAt', and 'updatedAt' from to string
-      (userOneInDB as any).createdAt = userOneInDB.createdAt.toISOString();
-      (userOneInDB as any).updatedAt = userOneInDB.updatedAt.toISOString();
-      (userTwoInDB as any).createdAt = userTwoInDB.createdAt.toISOString();
-      (userTwoInDB as any).updatedAt = userTwoInDB.updatedAt.toISOString();
+      const [
+        userOneInDB,
+        userTwoInDB,
+      ] = testUtils.setupEntitiesForComparison('users', [
+        userOne as User,
+        userTwo as User,
+      ]);
 
       // save a workspace to the db
-      const workspaceToSave = connection
+      const workspaceToSave = testUtils
+        .getConnection()
         .getRepository<Workspace>(Workspace)
         .create(workspace as any);
 
       // ts yelling at me when trying to chain save after create
       // not sure why
-      const workspaceInDB: any = await connection
+      const workspaceInDB: any = await testUtils
+        .getConnection()
         .getRepository<Workspace>(Workspace)
         .save(workspaceToSave);
       const teammatesToAdd = [userOne.username, userTwo.username];
-      const response = await request(app.app)
+      const response = await request(testUtils.getApp())
         .put(`/api/workspaces/${workspaceInDB.id}`)
         .send(teammatesToAdd)
         .set('Cookie', sessionCookie)
@@ -214,16 +189,18 @@ describe('Workspace Routes', () => {
       };
 
       // save a workspace to the db
-      const workspaceToSave = connection
+      const workspaceToSave = testUtils
+        .getConnection()
         .getRepository<Workspace>(Workspace)
         .create(workspace as any);
       // ts yelling at me when trying to chain save after create
       // not sure why
-      const workspaceInDB: any = await connection
+      const workspaceInDB: any = await testUtils
+        .getConnection()
         .getRepository(Workspace)
         .save(workspaceToSave);
       const teammatesToAdd = ['theresNoUser', 'noUserExists'];
-      const response = await request(app.app)
+      const response = await request(testUtils.getApp())
         .put(`/api/workspaces/${workspaceInDB.id}`)
         .send(teammatesToAdd)
         .set('Cookie', sessionCookie)
@@ -246,16 +223,18 @@ describe('Workspace Routes', () => {
       };
 
       // save a workspace to the db
-      const workspaceToSave = connection
+      const workspaceToSave = testUtils
+        .getConnection()
         .getRepository<Workspace>(Workspace)
         .create(workspace as any);
       // ts yelling at me when trying to chain save after create
       // not sure why
-      const workspaceInDB: any = await connection
+      const workspaceInDB: any = await testUtils
+        .getConnection()
         .getRepository(Workspace)
         .save(workspaceToSave);
       const teammatesToAdd = ['stackguest', 'stacktestuser'];
-      const response = await request(app.app)
+      const response = await request(testUtils.getApp())
         .put(`/api/workspaces/${workspaceInDB.id}`)
         .send(teammatesToAdd)
         .set('Cookie', sessionCookie)
@@ -275,53 +254,52 @@ describe('Workspace Routes', () => {
         owner: userInDB.id,
         teammates: [userInDB],
       };
-      const userOne1 = {
+      let userOne1 = {
         email: 'userOne1@example.com',
         password: 'userOne1',
         username: 'userOne1',
       };
-      const userTwo2 = {
+      let userTwo2 = {
         email: 'userTwo2@example.com',
         password: 'userTwo2',
         username: 'userTwo2',
       };
 
       // need more users in the db
-      const userOne1InDB = await connection
+      userOne1 = await testUtils
+        .getConnection()
         .getRepository<User>(User)
         .create(userOne1)
         .save();
-      const userTwo2InDB = await connection
+      userTwo2 = await testUtils
+        .getConnection()
         .getRepository<User>(User)
         .create(userTwo2)
         .save();
 
-      // remove hashPasswords
-      delete userOne1InDB.hashPassword;
-      delete userTwo2InDB.hashPassword;
-
-      // remove passwords
-      delete userOne1InDB.password;
-      delete userTwo2InDB.password;
-
-      // change 'createdAt', and 'updatedAt' from to string
-      (userOne1InDB as any).createdAt = userOne1InDB.createdAt.toISOString();
-      (userOne1InDB as any).updatedAt = userOne1InDB.updatedAt.toISOString();
-      (userTwo2InDB as any).createdAt = userTwo2InDB.createdAt.toISOString();
-      (userTwo2InDB as any).updatedAt = userTwo2InDB.updatedAt.toISOString();
+      // format the user objects as the objects returned from the server
+      const [
+        userOne1InDB,
+        userTwo2InDB,
+      ] = testUtils.setupEntitiesForComparison('users', [
+        userOne1 as User,
+        userTwo2 as User,
+      ]);
 
       // save a workspace to the db
-      const workspaceToSave = connection
+      const workspaceToSave = testUtils
+        .getConnection()
         .getRepository<Workspace>(Workspace)
         .create(workspace as any);
 
       // ts yelling at me when trying to chain save after create
       // not sure why
-      const workspaceInDB: any = await connection
+      const workspaceInDB: any = await testUtils
+        .getConnection()
         .getRepository<Workspace>(Workspace)
         .save(workspaceToSave);
       const teammatesToAdd = [userOne1.username, userTwo2.username];
-      const response = await request(app.app)
+      const response = await request(testUtils.getApp())
         .put(`/api/workspaces/${workspaceInDB.id}`)
         .send(teammatesToAdd)
         .set('Cookie', sessionCookie)
@@ -339,7 +317,7 @@ describe('Workspace Routes', () => {
 
   describe('GET /api/workspaces', () => {
     it('should fail when request is missing session cookie', async () => {
-      const response = await request(app.app)
+      const response = await request(testUtils.getApp())
         .get('/api/workspaces')
         .set('Accept', 'applicatiion/json')
         .expect('Content-Type', /json/)
@@ -362,21 +340,25 @@ describe('Workspace Routes', () => {
         owner: userInDB.id,
         teammates: [userInDB],
       };
-      const workspaceOneToSave = connection
+      const workspaceOneToSave = testUtils
+        .getConnection()
         .getRepository<Workspace>(Workspace)
         .create(workspaceOne as any);
-      const workspaceTwoToSave = connection
+      const workspaceTwoToSave = testUtils
+        .getConnection()
         .getRepository<Workspace>(Workspace)
         .create(workspaceTwo as any);
       // ts yelling at me when trying to chain save after create
       // not sure why
-      const workspaceOneInDB: any = await connection
+      const workspaceOneInDB: any = await testUtils
+        .getConnection()
         .getRepository<Workspace>(Workspace)
         .save(workspaceOneToSave);
-      const workspaceTwoInDB: any = await connection
+      const workspaceTwoInDB: any = await testUtils
+        .getConnection()
         .getRepository<Workspace>(Workspace)
         .save(workspaceTwoToSave);
-      const response = await request(app.app)
+      const response = await request(testUtils.getApp())
         .get('/api/workspaces')
         .set('Cookie', sessionCookie)
         .set('Accept', 'applicatiion/json')
@@ -401,7 +383,8 @@ describe('Workspace Routes', () => {
     });
 
     it('should successfully return an empty array when workspaces.length === 0', async () => {
-      const response = await request(app.app)
+      testUtils.clearTables('workspaces');
+      const response = await request(testUtils.getApp())
         .get('/api/workspaces')
         .set('Cookie', sessionCookie)
         .set('Accept', 'applicatiion/json')
@@ -415,7 +398,7 @@ describe('Workspace Routes', () => {
 
   describe('GET /api/workspaces/:workspaceId', () => {
     it('should fail when request is missing session cookie', async () => {
-      const response = await request(app.app)
+      const response = await request(testUtils.getApp())
         .get('/api/workspaces/1')
         .set('Accept', 'applicatiion/json')
         .expect('Content-Type', /json/)
@@ -434,7 +417,8 @@ describe('Workspace Routes', () => {
         username: 'user755166',
       };
 
-      const anotherUserInDB = await connection
+      const anotherUserInDB = await testUtils
+        .getConnection()
         .getRepository<User>(User)
         .create(anotherUser)
         .save();
@@ -444,13 +428,15 @@ describe('Workspace Routes', () => {
         owner: userInDB.id,
         teammates: [userInDB, anotherUserInDB],
       };
-      const workspaceToSave = connection
+      const workspaceToSave = testUtils
+        .getConnection()
         .getRepository<Workspace>(Workspace)
         .create(workspace as any);
-      const workspaceInDB: any = await connection
+      const workspaceInDB: any = await testUtils
+        .getConnection()
         .getRepository<Workspace>(Workspace)
         .save(workspaceToSave);
-      const response = await request(app.app)
+      const response = await request(testUtils.getApp())
         .get(`/api/workspaces/${workspaceInDB.id}`)
         .set('Cookie', sessionCookie)
         .set('Accept', 'applicatiion/json')
@@ -473,13 +459,15 @@ describe('Workspace Routes', () => {
         owner: userInDB.id,
         teammates: [userInDB],
       };
-      const workspaceToSave = connection
+      const workspaceToSave = testUtils
+        .getConnection()
         .getRepository<Workspace>(Workspace)
         .create(workspace as any);
-      const workspaceInDB: any = await connection
+      const workspaceInDB: any = await testUtils
+        .getConnection()
         .getRepository<Workspace>(Workspace)
         .save(workspaceToSave);
-      const response = await request(app.app)
+      const response = await request(testUtils.getApp())
         .get(`/api/workspaces/${workspaceInDB.id}`)
         .set('Cookie', sessionCookie)
         .set('Accept', 'applicatiion/json')

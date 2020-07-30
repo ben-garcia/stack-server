@@ -19,6 +19,7 @@ import {
 import { Channel, DirectMessage, Message, User, Workspace } from '../../entity';
 import App from '../../App';
 
+type Entity = User | Workspace | Channel | Message | DirectMessage;
 type Entities =
   | 'users'
   | 'workspaces'
@@ -101,6 +102,23 @@ class TestUtils {
         new WorkspaceService(getRepository<Workspace>(Workspace))
       ),
     ]);
+  }
+
+  setupEntitiesForComparison(entityType: string, entities: Entity[]): Entity[] {
+    const entitiesToReturn: Entity[] = [];
+    if (entityType === 'users') {
+      entities.forEach((user: any) => {
+        const entityCopy = { ...user };
+        delete entityCopy.hashPassword;
+        delete entityCopy.password;
+        // change 'createdAt', and 'updatedAt' from to string
+        (entityCopy as any).createdAt = entityCopy.createdAt.toISOString();
+        (entityCopy as any).updatedAt = entityCopy.updatedAt.toISOString();
+
+        entitiesToReturn.push(entityCopy);
+      });
+    }
+    return entitiesToReturn;
   }
 }
 export default TestUtils;
