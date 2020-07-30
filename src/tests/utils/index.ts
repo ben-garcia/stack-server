@@ -106,16 +106,40 @@ class TestUtils {
 
   setupEntitiesForComparison(entityType: string, entities: Entity[]): Entity[] {
     const entitiesToReturn: Entity[] = [];
+
     if (entityType === 'users') {
       entities.forEach((user: any) => {
-        const entityCopy = { ...user };
-        delete entityCopy.hashPassword;
-        delete entityCopy.password;
+        const userCopy = { ...user };
+        delete userCopy.hashPassword;
+        delete userCopy.password;
         // change 'createdAt', and 'updatedAt' from to string
-        (entityCopy as any).createdAt = entityCopy.createdAt.toISOString();
-        (entityCopy as any).updatedAt = entityCopy.updatedAt.toISOString();
+        (userCopy as any).createdAt = userCopy.createdAt.toISOString();
+        (userCopy as any).updatedAt = userCopy.updatedAt.toISOString();
 
-        entitiesToReturn.push(entityCopy);
+        entitiesToReturn.push(userCopy);
+      });
+    } else if (entityType === 'channels:dates') {
+      entities.forEach((channel: any) => {
+        const channelCopy = { ...channel };
+        delete (channelCopy as any).id;
+        delete (channelCopy as any).createdAt;
+        delete (channelCopy as any).updatedAt;
+
+        entitiesToReturn.push(channelCopy);
+      });
+    } else if (entityType === 'channels:members') {
+      entities.forEach((channel: any) => {
+        const channelCopy = { ...channel };
+
+        channelCopy.channel = channelCopy.id;
+        channelCopy.createdAt = channelCopy.createdAt.toISOString();
+        channelCopy.updatedAt = channelCopy.updatedAt.toISOString();
+        channelCopy.workspaceId = channelCopy.workspace;
+
+        delete (channelCopy as any).members;
+        delete channelCopy.workspace;
+
+        entitiesToReturn.push(channelCopy);
       });
     }
     return entitiesToReturn;

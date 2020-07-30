@@ -1,27 +1,13 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
-import Redis from 'ioredis';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import request from 'supertest';
-import { getRepository, Connection } from 'typeorm';
 
-import {
-  AuthenticationController,
-  ChannelController,
-  WorkspaceController,
-} from '../controllers';
-import {
-  ChannelService,
-  RedisService,
-  UserService,
-  WorkspaceService,
-} from '../services';
 import { Channel, User, Workspace } from '../entity';
-import App from '../App';
+import { fakeUser } from './fixtures';
+import TestUtils from './utils';
 import { createTypeormConnection } from '../utils';
 
 describe('Channel Routes', () => {
-  let app: App;
-  let connection: Connection;
+  let testUtils: TestUtils;
   // use a single user for all the tests
   let userInDB: User;
   let workspaceInDB: any;
@@ -29,53 +15,35 @@ describe('Channel Routes', () => {
   let sessionCookie: string;
 
   beforeAll(async () => {
-    connection = await createTypeormConnection();
-    app = new App([
-      new AuthenticationController(new UserService(getRepository<User>(User))),
-      new ChannelController(
-        new ChannelService(getRepository<Channel>(Channel)),
-        new RedisService(new Redis({ password: 'ben' })),
-        new UserService(getRepository<User>(User)),
-        new WorkspaceService(getRepository<Workspace>(Workspace))
-      ),
-      new WorkspaceController(
-        new RedisService(new Redis({ password: 'ben' })),
-        new UserService(getRepository<User>(User)),
-        new WorkspaceService(getRepository<Workspace>(Workspace))
-      ),
+    testUtils = new TestUtils(await createTypeormConnection());
+
+    const user = await testUtils
+      .getConnection()
+      .getRepository<User>(User)
+      .create(fakeUser.base)
+      .save();
+    const [userInDBCopy] = testUtils.setupEntitiesForComparison('users', [
+      user,
     ]);
 
-    const user = {
-      email: 'testemail@email.com',
-      username: 'testuser',
-      password: 'bestpassword',
-    };
-
-    userInDB = await connection
-      .getRepository<User>(User)
-      .create(user)
-      .save();
-
-    delete userInDB.hashPassword;
-    delete userInDB.password;
+    userInDB = userInDBCopy as User;
 
     const workspace = {
       name: 'channel workspace',
       owner: userInDB.id,
     };
-
-    const workspaceToSave = connection
+    const workspaceToSave = testUtils
+      .getConnection()
       .getRepository<Workspace>(Workspace)
       .create(workspace as any);
-
-    workspaceInDB = await connection
+    workspaceInDB = await testUtils
+      .getConnection()
       .getRepository<Workspace>(Workspace)
       .save(workspaceToSave);
-
     // get the session cookie
-    const response = await request(app.app)
+    const response = await request(testUtils.getApp())
       .post('/api/auth/login')
-      .send(user)
+      .send(fakeUser.base)
       .set('Accept', 'application/json');
 
     // eslint-disable-next-line prefer-destructuring
@@ -83,17 +51,12 @@ describe('Channel Routes', () => {
   });
 
   afterEach(async () => {
-    await connection
-      .getRepository<Channel>(Channel)
-      .query('DELETE FROM channels');
+    await testUtils.clearTables('channels');
   });
 
   afterAll(async () => {
-    await connection
-      .getRepository<Workspace>(Workspace)
-      .query('DELETE FROM workspaces');
-    await connection.getRepository<User>(User).query('DELETE FROM users');
-    await connection.close();
+    await testUtils.clearTables('users', 'workspaces');
+    await testUtils.closeConnection();
   });
 
   describe('POST /api/channels', () => {
@@ -105,7 +68,7 @@ describe('Channel Routes', () => {
         private: false,
         workspace: workspaceInDB.id,
       };
-      const response = await request(app.app)
+      const response = await request(testUtils.getApp())
         .post('/api/channels')
         .send({ channel })
         .set('Accept', 'application/json')
@@ -124,23 +87,22 @@ describe('Channel Routes', () => {
         password: 'channelUser',
         username: 'channelUser5216',
       };
-
-      const channelUser2InDB: User = await connection
+      const channelUser: User = await testUtils
+        .getConnection()
         .getRepository<User>(User)
         .create(user)
         .save();
-
-      delete channelUser2InDB.hashPassword;
-      delete channelUser2InDB.password;
-
+      const [channelUserInDB] = testUtils.setupEntitiesForComparison('users', [
+        channelUser,
+      ]);
       const channel = {
         description: 'first channel description',
         name: 'first channel test',
-        members: [userInDB.username, channelUser2InDB.username],
+        members: [userInDB.username, (channelUserInDB as User).username],
         private: false,
         workspace: workspaceInDB.id,
       };
-      const response = await request(app.app)
+      const res = await request(testUtils.getApp())
         .post('/api/channels')
         .send({ channel })
         .set('Cookie', sessionCookie)
@@ -151,29 +113,20 @@ describe('Channel Routes', () => {
         message: 'Channel Created',
         channel: {
           description: channel.description,
-          members: [
-            {
-              ...userInDB,
-              createdAt: userInDB.createdAt.toISOString(),
-              updatedAt: userInDB.updatedAt.toISOString(),
-            },
-            {
-              ...channelUser2InDB,
-              createdAt: channelUser2InDB.createdAt.toISOString(),
-              updatedAt: channelUser2InDB.updatedAt.toISOString(),
-            },
-          ],
+          members: [userInDB, channelUserInDB],
           name: channel.name,
           private: false,
           topic: '',
         },
       };
+      const [
+        receivedChannel,
+      ] = testUtils.setupEntitiesForComparison('channels:dates', [
+        res.body.channel,
+      ]);
+      const response = { ...res.body, channel: receivedChannel };
 
-      delete response.body.channel.id;
-      delete response.body.channel.createdAt;
-      delete response.body.channel.updatedAt;
-
-      expect(response.body).toEqual(expected);
+      expect(response).toEqual(expected);
     });
 
     it('should successfully create a channel with members > 1 and private === false and with an invalid username', async () => {
@@ -183,22 +136,28 @@ describe('Channel Routes', () => {
         username: 'oa02h0t2h',
       };
 
-      const channelUser2InDB: User = await connection
+      const channelUser: User = await testUtils
+        .getConnection()
         .getRepository<User>(User)
         .create(user)
         .save();
 
-      delete channelUser2InDB.password;
-      delete channelUser2InDB.hashPassword;
+      const [channelUserInDB] = testUtils.setupEntitiesForComparison('users', [
+        channelUser,
+      ]);
 
       const channel = {
         description: 'first channel description',
         name: 'first channel test',
-        members: [userInDB.username, channelUser2InDB.username, 'fakeuser'],
+        members: [
+          userInDB.username,
+          (channelUserInDB as User).username,
+          'fakeuser',
+        ],
         private: false,
         workspace: userInDB.id,
       };
-      const response = await request(app.app)
+      const res = await request(testUtils.getApp())
         .post('/api/channels')
         .send({ channel })
         .set('Cookie', sessionCookie)
@@ -209,29 +168,20 @@ describe('Channel Routes', () => {
         message: 'Channel Created',
         channel: {
           description: channel.description,
-          members: [
-            {
-              ...userInDB,
-              createdAt: userInDB.createdAt.toISOString(),
-              updatedAt: userInDB.updatedAt.toISOString(),
-            },
-            {
-              ...channelUser2InDB,
-              createdAt: channelUser2InDB.createdAt.toISOString(),
-              updatedAt: channelUser2InDB.updatedAt.toISOString(),
-            },
-          ],
+          members: [userInDB, channelUserInDB],
           name: channel.name,
           private: false,
           topic: '',
         },
       };
+      const [
+        receivedChannel,
+      ] = testUtils.setupEntitiesForComparison('channels:dates', [
+        res.body.channel,
+      ]);
+      const response = { ...res.body, channel: receivedChannel };
 
-      delete response.body.channel.id;
-      delete response.body.channel.createdAt;
-      delete response.body.channel.updatedAt;
-
-      expect(response.body).toEqual(expected);
+      expect(response).toEqual(expected);
     });
 
     it('should successfully create a channel with members === 1 and private === true', async () => {
@@ -240,14 +190,13 @@ describe('Channel Routes', () => {
         password: 'channelUser6262621',
         username: 'user26267',
       };
-
-      const channelUser2InDB: User = await connection
+      const channelUser: User = await testUtils
+        .getConnection()
         .getRepository<User>(User)
         .create(user)
         .save();
 
-      delete channelUser2InDB.hashPassword;
-      delete channelUser2InDB.password;
+      testUtils.setupEntitiesForComparison('users', [channelUser]);
 
       const channel = {
         description: 'second channel description',
@@ -256,7 +205,7 @@ describe('Channel Routes', () => {
         private: true,
         workspace: userInDB.id,
       };
-      const response = await request(app.app)
+      const res = await request(testUtils.getApp())
         .post('/api/channels')
         .send({ channel })
         .set('Cookie', sessionCookie)
@@ -267,24 +216,20 @@ describe('Channel Routes', () => {
         message: 'Channel Created',
         channel: {
           description: channel.description,
-          members: [
-            {
-              ...userInDB,
-              createdAt: userInDB.createdAt.toISOString(),
-              updatedAt: userInDB.updatedAt.toISOString(),
-            },
-          ],
+          members: [userInDB],
           name: channel.name,
           private: true,
           topic: '',
         },
       };
+      const [
+        receivedChannel,
+      ] = testUtils.setupEntitiesForComparison('channels:dates', [
+        res.body.channel,
+      ]);
+      const response = { ...res.body, channel: receivedChannel };
 
-      delete response.body.channel.id;
-      delete response.body.channel.createdAt;
-      delete response.body.channel.updatedAt;
-
-      expect(response.body).toEqual(expected);
+      expect(response).toEqual(expected);
     });
   });
 
@@ -299,11 +244,13 @@ describe('Channel Routes', () => {
         private: false,
         workspace: workspaceInDB.id,
       };
-      const channelToSave = connection
+      const channelToSave = testUtils
+        .getConnection()
         .getRepository<Channel>(Channel)
         .create(channel as any);
 
-      channelInDB = await connection
+      channelInDB = await testUtils
+        .getConnection()
         .getRepository<Channel>(Channel)
         .save(channelToSave);
     });
@@ -312,7 +259,7 @@ describe('Channel Routes', () => {
       const body = {
         members: [userInDB.username],
       };
-      const response = await request(app.app)
+      const response = await request(testUtils.getApp())
         .put(`/api/channels/${channelInDB.id}`)
         .send(body)
         .set('Accept', 'application/json')
@@ -329,7 +276,7 @@ describe('Channel Routes', () => {
       const body = {
         members: [userInDB.username],
       };
-      const response = await request(app.app)
+      const response = await request(testUtils.getApp())
         .put(`/api/channels/${channelInDB.id}`)
         .send(body)
         .set('Cookie', sessionCookie)
@@ -347,7 +294,7 @@ describe('Channel Routes', () => {
       const body = {
         topic: 'new topic',
       };
-      const response = await request(app.app)
+      const response = await request(testUtils.getApp())
         .put(`/api/channels/${channelInDB.id}`)
         .send(body)
         .set('Cookie', sessionCookie)
@@ -365,7 +312,7 @@ describe('Channel Routes', () => {
       const body = {
         description: 'new description',
       };
-      const response = await request(app.app)
+      const response = await request(testUtils.getApp())
         .put(`/api/channels/${channelInDB.id}`)
         .send(body)
         .set('Cookie', sessionCookie)
@@ -385,7 +332,7 @@ describe('Channel Routes', () => {
         description: 'new description',
         topic: 'best topic',
       };
-      const response = await request(app.app)
+      const response = await request(testUtils.getApp())
         .put(`/api/channels/${channelInDB.id}`)
         .send(body)
         .set('Cookie', sessionCookie)
@@ -402,7 +349,7 @@ describe('Channel Routes', () => {
 
   describe('GET /api/channels/channelId', () => {
     it('should fail when request is missing session cookie', async () => {
-      const response = await request(app.app)
+      const response = await request(testUtils.getApp())
         .get('/api/channels/1')
         .set('Accept', 'applicatiion/json')
         .expect('Content-Type', /json/)
@@ -420,7 +367,8 @@ describe('Channel Routes', () => {
         password: 'password15156',
         email: 'test@test.com',
       };
-      const otherUserInDB = await connection
+      const otherUserInDB = await testUtils
+        .getConnection()
         .getRepository<User>(User)
         .create(otherUser)
         .save();
@@ -431,13 +379,15 @@ describe('Channel Routes', () => {
         workspace: workspaceInDB.id,
         members: [userInDB, otherUserInDB],
       };
-      const channelToSave = connection
+      const channelToSave = testUtils
+        .getConnection()
         .getRepository<Channel>(Channel)
         .create(channel);
-      const channelInDB: any = await connection
+      const channelInDB: any = await testUtils
+        .getConnection()
         .getRepository<Channel>(Channel)
         .save(channelToSave);
-      const response = await request(app.app)
+      const response = await request(testUtils.getApp())
         .get(`/api/channels/${channelInDB.id}`)
         .set('Cookie', sessionCookie)
         .set('Accept', 'applicatiion/json')
@@ -461,13 +411,15 @@ describe('Channel Routes', () => {
         workspace: workspaceInDB.id,
         members: [userInDB],
       };
-      const channelToSave = connection
+      const channelToSave = testUtils
+        .getConnection()
         .getRepository<Channel>(Channel)
         .create(channel);
-      const channelInDB: any = await connection
+      const channelInDB: any = await testUtils
+        .getConnection()
         .getRepository<Channel>(Channel)
         .save(channelToSave);
-      const response = await request(app.app)
+      const response = await request(testUtils.getApp())
         .get(`/api/channels/${channelInDB.id}`)
         .set('Cookie', sessionCookie)
         .set('Accept', 'applicatiion/json')
@@ -483,7 +435,7 @@ describe('Channel Routes', () => {
 
   describe('GET /api/channels?workspace=workspaceId', () => {
     it('should fail when request is missing session cookie', async () => {
-      const response = await request(app.app)
+      const response = await request(testUtils.getApp())
         .get(`/api/channels?workspaceId=${workspaceInDB.id}`)
         .set('Accept', 'applicatiion/json')
         .expect('Content-Type', /json/)
@@ -504,10 +456,12 @@ describe('Channel Routes', () => {
         members: [userInDB],
         workspace: workspaceInDB.id,
       };
-      const channel1ToSave = connection
+      const channel1ToSave = testUtils
+        .getConnection()
         .getRepository<Channel>(Channel)
         .create(channel1);
-      const channel1InDB: any = await connection
+      const channel1InDB: any = await testUtils
+        .getConnection()
         .getRepository<Channel>(Channel)
         .save(channel1ToSave);
       const channel2 = {
@@ -517,49 +471,46 @@ describe('Channel Routes', () => {
         members: [userInDB],
         workspace: workspaceInDB.id,
       };
-      const channel2ToSave = connection
+      const channel2ToSave = testUtils
+        .getConnection()
         .getRepository<Channel>(Channel)
         .create(channel2);
-      const channel2InDB: any = await connection
+      const channel2InDB: any = await testUtils
+        .getConnection()
         .getRepository<Channel>(Channel)
         .save(channel2ToSave);
 
       workspaceInDB.channels = [channel1InDB, channel2InDB];
 
-      await connection.getRepository<Workspace>(Workspace).save(workspaceInDB);
+      await testUtils
+        .getConnection()
+        .getRepository<Workspace>(Workspace)
+        .save(workspaceInDB);
 
-      const response = await request(app.app)
+      const response = await request(testUtils.getApp())
         .get(`/api/channels?workspaceId=${workspaceInDB.id}`)
         .set('Cookie', sessionCookie)
         .set('Accept', 'applicatiion/json')
         .expect('Content-Type', /json/)
         .expect(200);
 
-      delete channel1InDB.members;
-      delete channel2InDB.members;
-
-      channel1InDB.workspaceId = channel1InDB.workspace;
-      delete channel1InDB.workspace;
-      channel2InDB.workspaceId = channel2InDB.workspace;
-      delete channel2InDB.workspace;
+      const [
+        channelOne,
+        channelTwo,
+      ] = testUtils.setupEntitiesForComparison('channels:members', [
+        channel1InDB,
+        channel2InDB,
+      ]);
 
       const expected = {
         channels: [
           {
-            ...channel1InDB,
-            channel: channel1InDB.id,
-            createdAt: channel1InDB.createdAt.toISOString(),
-            updatedAt: channel1InDB.updatedAt.toISOString(),
+            ...channelOne,
             user: userInDB.id,
-            workspaceId: channel1InDB.workspaceId,
           },
           {
-            ...channel2InDB,
-            channel: channel2InDB.id,
-            createdAt: channel2InDB.createdAt.toISOString(),
-            updatedAt: channel2InDB.updatedAt.toISOString(),
+            ...channelTwo,
             user: userInDB.id,
-            workspaceId: channel2InDB.workspaceId,
           },
         ],
       };
@@ -570,9 +521,12 @@ describe('Channel Routes', () => {
     it('should return an empty array of channels when channels.length === 0', async () => {
       workspaceInDB.channels = [];
 
-      await connection.getRepository<Workspace>(Workspace).save(workspaceInDB);
+      await testUtils
+        .getConnection()
+        .getRepository<Workspace>(Workspace)
+        .save(workspaceInDB);
 
-      const response = await request(app.app)
+      const response = await request(testUtils.getApp())
         .get(`/api/channels?workspaceId=${workspaceInDB.id}`)
         .set('Cookie', sessionCookie)
         .set('Accept', 'applicatiion/json')
