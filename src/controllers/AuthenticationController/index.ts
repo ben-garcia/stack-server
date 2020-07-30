@@ -78,7 +78,19 @@ class AuthenticationController implements Controller {
     } catch (e) {
       // eslint-disable-next-line no-console
       // console.log('error in registerUser: ', e);
-      res.status(400).json({ error: e.details[0].message });
+      if (e.details) {
+        res.status(400).json({ error: e.details[0].message });
+      } else if (e.detail) {
+        if (e.detail.match(/email/)) {
+          res
+            .status(409)
+            .json({ error: ['User with that email already exists'] });
+        } else if (e.detail.match(/username/)) {
+          res
+            .status(409)
+            .json({ error: ['User with that username already exists'] });
+        }
+      }
     }
   };
 

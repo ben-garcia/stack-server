@@ -1,44 +1,32 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import request from 'supertest';
-import { getRepository, Connection } from 'typeorm';
 
-import { AuthenticationController } from '../controllers';
-import { UserService } from '../services';
 import { User } from '../entity';
-import App from '../App';
+import { fakeUser } from './fixtures';
+import TestUtils from './utils';
 import { createTypeormConnection } from '../utils';
 
 describe('Authentication Routes', () => {
-  let app: App;
-  let connection: Connection;
+  let testUtils: TestUtils;
 
   beforeAll(async () => {
-    connection = await createTypeormConnection();
-    app = new App([
-      new AuthenticationController(new UserService(getRepository<User>(User))),
-    ]);
+    testUtils = new TestUtils(await createTypeormConnection());
   });
 
   afterEach(async () => {
-    await connection.getRepository<User>(User).query('DELETE FROM users');
+    testUtils.clearTables('users');
   });
 
   afterAll(async () => {
-    await connection.close();
+    testUtils.closeConnection();
   });
 
   describe('POST /api/auth/register', () => {
     it('should successfully create a user', async () => {
-      const user = {
-        email: 'testemail@email.com',
-        username: 'testuser',
-        password: 'bestpassword',
-      };
       const expected = { message: 'User Created' };
-
-      const response = await request(app.app)
+      const response = await request(testUtils.getApp())
         .post('/api/auth/register')
-        .send(user)
+        .send(fakeUser.base)
         .set('Accept', 'application/json')
         .expect('Content-Type', /json/)
         .expect(201);
@@ -48,16 +36,10 @@ describe('Authentication Routes', () => {
 
     describe('email', () => {
       it('should fail when trying to create a user with an invalid email', async () => {
-        const user = {
-          email: 'invalidemail',
-          username: 'testuser',
-          password: 'bestpassword',
-        };
         const expected = { error: '"email" must be a valid email' };
-
-        const response = await request(app.app)
+        const response = await request(testUtils.getApp())
           .post('/api/auth/register')
-          .send(user)
+          .send(fakeUser.withInvalidEmail)
           .set('Accept', 'application/json')
           .expect('Content-Type', /json/)
           .expect(400);
@@ -66,24 +48,17 @@ describe('Authentication Routes', () => {
       });
 
       it('should fail when trying to create a user when a user already exists with same email', async () => {
-        const user = {
-          email: 'validemail@email.com',
-          username: 'anotheruser',
-          password: 'bestpassword',
-        };
         const expected = { error: ['User with that email already exists'] };
 
-        await connection
+        await testUtils
+          .getConnection()
           .getRepository<User>(User)
-          .create({
-            ...user,
-            username: 'usertest',
-          })
+          .create(fakeUser.base)
           .save();
 
-        const response = await request(app.app)
+        const response = await request(testUtils.getApp())
           .post('/api/auth/register')
-          .send(user)
+          .send(fakeUser.withSameEmail)
           .set('Accept', 'application/json')
           .expect('Content-Type', /json/)
           .expect(409);
@@ -94,18 +69,12 @@ describe('Authentication Routes', () => {
 
     describe('username', () => {
       it('should fail when trying to create a user with a username that doesnt meet the length requirement', async () => {
-        const user = {
-          email: 'correctemail@email.com',
-          username: 'user',
-          password: 'bestpassword',
-        };
         const expected = {
           error: '"username" length must be at least 6 characters long',
         };
-
-        const response = await request(app.app)
+        const response = await request(testUtils.getApp())
           .post('/api/auth/register')
-          .send(user)
+          .send(fakeUser.withInvalidUsername)
           .set('Accept', 'application/json')
           .expect('Content-Type', /json/)
           .expect(400);
@@ -114,21 +83,17 @@ describe('Authentication Routes', () => {
       });
 
       it('should fail when trying to create a user when a user already exists with same username', async () => {
-        const user = {
-          email: 'bestemail@thereis.com',
-          username: 'secretusername',
-          password: 'whatisthepassword',
-        };
         const expected = { error: ['User with that username already exists'] };
 
-        await connection
+        await testUtils
+          .getConnection()
           .getRepository<User>(User)
-          .create({ ...user, email: 'nottheright@email.com' })
+          .create(fakeUser.base)
           .save();
 
-        const response = await request(app.app)
+        const response = await request(testUtils.getApp())
           .post('/api/auth/register')
-          .send(user)
+          .send(fakeUser.withSameUsername)
           .set('Accept', 'application/json')
           .expect('Content-Type', /json/)
           .expect(409);
@@ -138,11 +103,6 @@ describe('Authentication Routes', () => {
     });
 
     it('should fail when trying to create a user when a user already exists with same email and username', async () => {
-      const user = {
-        email: 'exampleemail@test.com',
-        username: 'user91050',
-        password: 'topsecret',
-      };
       const expected = {
         error: [
           'User with that email already exists',
@@ -150,14 +110,15 @@ describe('Authentication Routes', () => {
         ],
       };
 
-      await connection
+      await testUtils
+        .getConnection()
         .getRepository<User>(User)
-        .create(user)
+        .create(fakeUser.base)
         .save();
 
-      const response = await request(app.app)
+      const response = await request(testUtils.getApp())
         .post('/api/auth/register')
-        .send(user)
+        .send(fakeUser.base)
         .set('Accept', 'application/json')
         .expect('Content-Type', /json/)
         .expect(409);
@@ -166,18 +127,13 @@ describe('Authentication Routes', () => {
     });
 
     it('should fail when trying to create a user with a password that doesnt meet the legnth requirement', async () => {
-      const user = {
-        email: 'correctemail@email.com',
-        username: 'correctuser',
-        password: '12345',
-      };
       const expected = {
-        error: `"password" with value "${user.password}" fails to match the required pattern: /^[a-zA-Z0-9]{6,50}$/`,
+        error: `"password" with value "${fakeUser.withInvalidPassword.password}" fails to match the required pattern: /^[a-zA-Z0-9]{6,50}$/`,
       };
 
-      const response = await request(app.app)
+      const response = await request(testUtils.getApp())
         .post('/api/auth/register')
-        .send(user)
+        .send(fakeUser.withInvalidPassword)
         .set('Accept', 'application/json')
         .expect('Content-Type', /json/)
         .expect(400);
@@ -188,31 +144,26 @@ describe('Authentication Routes', () => {
 
   describe('POST /api/auth/login', () => {
     it('should successfully login', async () => {
-      const user = {
-        email: 'testemail@email.com',
-        username: 'testuser',
-        password: 'bestpassword',
-      };
-
-      const userInDB = await connection
+      const userInDB = await testUtils
+        .getConnection()
         .getRepository<User>(User)
-        .create(user)
+        .create(fakeUser.base)
         .save();
 
       // remove hashPassword method and password property
       delete userInDB.hashPassword;
       delete userInDB.password;
 
-      const response = await request(app.app)
+      const response = await request(testUtils.getApp())
         .post('/api/auth/login')
-        .send(user)
+        .send(fakeUser.base)
         .set('Accept', 'application/json')
         .expect('Content-Type', /json/)
         .expect(200);
       const [cookie] = response.header['set-cookie'];
       // User entity's createdAt and updatedAt properties are of type Date
       // call toISOString to get convert them to a string to compare
-      const expectResponse = {
+      const expected = {
         user: {
           ...userInDB,
           createdAt: userInDB.createdAt.toISOString(),
@@ -220,58 +171,40 @@ describe('Authentication Routes', () => {
         },
       };
 
-      expect(response.body).toStrictEqual(expectResponse);
+      expect(response.body).toStrictEqual(expected);
       expect(cookie).toMatch(/^stackSessionId/);
     });
 
     it('should fail when there is no user in the db with a particallar email login', async () => {
-      const user = {
-        email: 'testemail@email.com',
-        username: 'testuser',
-        password: 'bestpassword',
-      };
-      const userTryingToLogin = {
-        ...user,
-        email: 'noemailfound@email.com',
-      };
-
-      await connection
+      await testUtils
+        .getConnection()
         .getRepository<User>(User)
-        .create(user)
+        .create(fakeUser.base)
         .save();
 
-      const response = await request(app.app)
+      const response = await request(testUtils.getApp())
         .post('/api/auth/login')
-        .send(userTryingToLogin)
+        .send(fakeUser.tryingToLoginWithInvalidEmail)
         .set('Accept', 'application/json')
         .expect('Content-Type', /json/)
         .expect(404);
-      const expectResponse = {
+      const expected = {
         error: 'There is no user with that email/password combination',
       };
 
-      expect(response.body).toStrictEqual(expectResponse);
+      expect(response.body).toStrictEqual(expected);
     });
 
     it('should fail when password dont match', async () => {
-      const user = {
-        email: 'testemail@email.com',
-        username: 'testuser',
-        password: 'bestpassword',
-      };
-      const userTryingToLogin = {
-        ...user,
-        password: 'wrongpassword',
-      };
-
-      await connection
+      await testUtils
+        .getConnection()
         .getRepository<User>(User)
-        .create(user)
+        .create(fakeUser.base)
         .save();
 
-      const response = await request(app.app)
+      const response = await request(testUtils.getApp())
         .post('/api/auth/login')
-        .send(userTryingToLogin)
+        .send(fakeUser.tryingToLoginWithInvalidPassword)
         .set('Accept', 'application/json')
         .expect('Content-Type', /json/)
         .expect(404);
@@ -286,41 +219,37 @@ describe('Authentication Routes', () => {
 
   describe('POST /api/auth/logout', () => {
     it('should fail when session cookie is missing', async () => {
-      const logoutResponse = await request(app.app)
+      const response = await request(testUtils.getApp())
         .post('/api/auth/logout')
         .set('Accept', 'application/json')
         .expect('Content-Type', /json/)
         .expect(401);
-      const expectResponse = {
+      const expected = {
         error: 'Unauthorized',
       };
 
-      expect(logoutResponse.body).toStrictEqual(expectResponse);
+      expect(response.body).toStrictEqual(expected);
     });
 
     it('should successfully logout', async () => {
-      const user = {
-        email: 'exampleemail@exemail.com',
-        username: 'user54929',
-        password: 'bestpassword',
-      };
-      const userInDB = await connection
+      const userInDB = await testUtils
+        .getConnection()
         .getRepository<User>(User)
-        .create(user)
+        .create(fakeUser.base)
         .save();
-      const loginResponse = await request(app.app)
+      const loginResponse = await request(testUtils.getApp())
         .post('/api/auth/login')
-        .send(user)
+        .send(fakeUser.base)
         .set('Accept', 'application/json');
-      const logoutResponse = await request(app.app)
+      const logoutResponse = await request(testUtils.getApp())
         .post('/api/auth/logout')
         .set('Cookie', loginResponse.header['set-cookie'])
         .set('Accept', 'application/json')
         .expect('Content-Type', /json/);
-      const expectResponse = {
+      const expected = {
         message: `${userInDB.username} logged out successfully`,
       };
-      expect(logoutResponse.body).toStrictEqual(expectResponse);
+      expect(logoutResponse.body).toStrictEqual(expected);
     });
   });
 });

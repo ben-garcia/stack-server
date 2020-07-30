@@ -2,7 +2,7 @@ import { Repository } from 'typeorm';
 
 import { User } from '../../entity';
 
-interface userDTO {
+export interface UserDTO {
   email: string;
   password: string;
   username: string;
@@ -27,7 +27,7 @@ class UserService {
     return this.userRepository.findOne({ where: { username } });
   }
 
-  async create(user: userDTO): Promise<User> {
+  async create(user: UserDTO): Promise<User> {
     const newUser = this.userRepository.create(user);
     await this.userRepository.save(newUser);
 
