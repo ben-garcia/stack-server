@@ -141,6 +141,17 @@ class TestUtils {
 
         entitiesToReturn.push(channelCopy);
       });
+    } else if (entityType === 'messages') {
+      entities.forEach((message: any) => {
+        const messageCopy = { ...message };
+
+        messageCopy.createdAt = messageCopy.createdAt.toISOString();
+        messageCopy.updatedAt = messageCopy.updatedAt.toISOString();
+
+        delete (messageCopy as any).channel;
+
+        entitiesToReturn.push(messageCopy);
+      });
     }
     return entitiesToReturn;
   }
