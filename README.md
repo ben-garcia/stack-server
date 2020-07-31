@@ -45,22 +45,8 @@ This repo contains the back-end code for stack which is a miniature slack clone 
 4. install dependencies with
    `cd server` and `npm install` or `yarn`
 
-5) start the server
+5. run the tests `npm test` or `yarn test`
 
-   `npm run start`
+6) start the server `npm start` or `yarn start` which will start the server on port 8080.
 
-   or
-
-   `yarn start`
-
-   which will start the server on port 8080.
-
-6) start the client
-
-   `npm run start`
-
-   or
-
-   `yarn start`
-
-   which will start the client on port 3000.
+7) start the client `npm start` or `yarn start` which will start the client on port 3000.
