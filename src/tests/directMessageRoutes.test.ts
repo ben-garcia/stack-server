@@ -1,29 +1,12 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
-import Redis from 'ioredis';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import request from 'supertest';
-import { getRepository, Connection } from 'typeorm';
-
-import {
-  AuthenticationController,
-  ChannelController,
-  DirectMessageController,
-  WorkspaceController,
-} from '../controllers';
-import {
-  ChannelService,
-  DirectMessageService,
-  RedisService,
-  UserService,
-  WorkspaceService,
-} from '../services';
-import { Channel, DirectMessage, User, Workspace } from '../entity';
-import App from '../App';
+import { DirectMessage, User, Workspace } from '../entity';
+import { fakeUser } from './fixtures';
+import TestUtils from './utils';
 import { createTypeormConnection } from '../utils';
 
 describe('DirectMessage Routes', () => {
-  let app: App;
-  let connection: Connection;
+  let testUtils: TestUtils;
   // use a single user for all the tests
   let userInDB: User;
   let workspaceInDB: any;
@@ -31,58 +14,35 @@ describe('DirectMessage Routes', () => {
   let sessionCookie: string;
 
   beforeAll(async () => {
-    connection = await createTypeormConnection();
-    app = new App([
-      new AuthenticationController(new UserService(getRepository<User>(User))),
-      new ChannelController(
-        new ChannelService(getRepository<Channel>(Channel)),
-        new RedisService(new Redis({ password: 'ben' })),
-        new UserService(getRepository<User>(User)),
-        new WorkspaceService(getRepository<Workspace>(Workspace))
-      ),
-      new DirectMessageController(
-        new DirectMessageService(getRepository<DirectMessage>(DirectMessage)),
-        new RedisService(new Redis({ password: 'ben' })),
-        new UserService(getRepository<User>(User))
-      ),
-      new WorkspaceController(
-        new RedisService(new Redis({ password: 'ben' })),
-        new UserService(getRepository<User>(User)),
-        new WorkspaceService(getRepository<Workspace>(Workspace))
-      ),
-    ]);
+    testUtils = new TestUtils(await createTypeormConnection());
 
-    const user = {
-      email: 'direct-message@email.com',
-      username: 'directmessageuser',
-      password: 'directmessageuser5266',
-    };
-
-    userInDB = await connection
+    userInDB = await testUtils
+      .getConnection()
       .getRepository<User>(User)
-      .create(user)
+      .create(fakeUser.base)
       .save();
 
-    delete userInDB.hashPassword;
-    delete userInDB.password;
+    testUtils.setupEntitiesForComparison('users', [userInDB]);
 
     const workspace = {
       name: 'channel workspace',
       owner: userInDB.id,
     };
 
-    const workspaceToSave = connection
+    const workspaceToSave = testUtils
+      .getConnection()
       .getRepository<Workspace>(Workspace)
       .create(workspace as any);
 
-    workspaceInDB = await connection
+    workspaceInDB = await testUtils
+      .getConnection()
       .getRepository<Workspace>(Workspace)
       .save(workspaceToSave);
 
     // get the session cookie
-    const response = await request(app.app)
+    const response = await request(testUtils.getApp())
       .post('/api/auth/login')
-      .send(user)
+      .send(fakeUser.base)
       .set('Accept', 'application/json');
 
     // eslint-disable-next-line prefer-destructuring
@@ -90,20 +50,11 @@ describe('DirectMessage Routes', () => {
   });
 
   afterEach(async () => {
-    await connection
-      .getRepository<DirectMessage>(DirectMessage)
-      .query('DELETE FROM direct_messages');
+    await testUtils.clearTables('directMessages');
   });
 
   afterAll(async () => {
-    await connection
-      .getRepository<Channel>(Channel)
-      .query('DELETE FROM channels');
-    await connection
-      .getRepository<Workspace>(Workspace)
-      .query('DELETE FROM workspaces');
-    await connection.getRepository<User>(User).query('DELETE FROM users');
-    await connection.close();
+    await testUtils.clearTables('users', 'workspaces', 'channels');
   });
 
   describe('POST /api/direct-messages', () => {
@@ -113,7 +64,7 @@ describe('DirectMessage Routes', () => {
         workspaceId: workspaceInDB.id,
         user: userInDB.id,
       };
-      const response = await request(app.app)
+      const response = await request(testUtils.getApp())
         .post('/api/direct-messages')
         .send({ message })
         .set('Accept', 'application/json')
@@ -132,7 +83,7 @@ describe('DirectMessage Routes', () => {
         workspaceId: workspaceInDB.id,
         user: userInDB.id,
       };
-      const response = await request(app.app)
+      const response = await request(testUtils.getApp())
         .post('/api/direct-messages')
         .send({ message })
         .set('Cookie', sessionCookie)
@@ -158,7 +109,7 @@ describe('DirectMessage Routes', () => {
 
   describe('GET /api/direct-messages?teammateId=teammateId&workspaceId=workspaceId', () => {
     it('should fail when request is missing session cookie', async () => {
-      const response = await request(app.app)
+      const response = await request(testUtils.getApp())
         .get('/api/direct-messages?teammateId=1&workspaceId=1')
         .set('Accept', 'application/json')
         .expect('Content-Type', /json/)
@@ -177,46 +128,48 @@ describe('DirectMessage Routes', () => {
         password: 'directmjijagessageuser5266',
       };
 
-      const otherUserInDB = await connection
+      const otherUserInDB = await testUtils
+        .getConnection()
         .getRepository<User>(User)
         .create(otherUser)
         .save();
-      const message = {
+      let message: any = {
         content: 'GET direct direct message 1 content',
         workspaceId: workspaceInDB.id,
         user: userInDB.id,
       };
-      const message2 = {
+      let message2: any = {
         content: 'GET direct direct message 2 content',
         workspaceId: workspaceInDB.id,
         user: otherUserInDB.id,
       };
-      const messageToSave = connection
+      message = testUtils
+        .getConnection()
         .getRepository<DirectMessage>(DirectMessage)
         .create(message as any);
-      const messageInDB: any = await connection
+      message = await testUtils
+        .getConnection()
         .getRepository<DirectMessage>(DirectMessage)
-        .save(messageToSave);
+        .save(message);
 
-      const message2ToSave = connection
+      message2 = testUtils
+        .getConnection()
         .getRepository<DirectMessage>(DirectMessage)
         .create(message2 as any);
-      const message2InDB: any = await connection
+      message2 = await testUtils
+        .getConnection()
         .getRepository<DirectMessage>(DirectMessage)
-        .save(message2ToSave);
+        .save(message2);
 
-      messageInDB.updatedAt = messageInDB.updatedAt.toISOString();
-      messageInDB.createdAt = messageInDB.createdAt.toISOString();
-      message2InDB.updatedAt = message2InDB.updatedAt.toISOString();
-      message2InDB.createdAt = message2InDB.createdAt.toISOString();
+      const [
+        messageInDB,
+        message2InDB,
+      ] = testUtils.setupEntitiesForComparison('messages', [message, message2]);
 
-      delete messageInDB.channel;
-      delete message2InDB.channel;
+      (messageInDB as any).user = { username: userInDB.username };
+      (message2InDB as any).user = { username: otherUserInDB.username };
 
-      messageInDB.user = { username: userInDB.username };
-      message2InDB.user = { username: userInDB.username };
-
-      const response = await request(app.app)
+      const response = await request(testUtils.getApp())
         .get(
           `/api/direct-messages?teammateId=${otherUserInDB.id}&workspaceId=${workspaceInDB.id}`
         )
@@ -225,17 +178,14 @@ describe('DirectMessage Routes', () => {
         .expect('Content-Type', /json/)
         .expect(200);
       const expected = {
-        directMessages: [
-          { ...messageInDB },
-          { ...message2InDB, user: { username: otherUserInDB.username } },
-        ],
+        directMessages: [messageInDB, message2InDB],
       };
 
       expect(response.body).toEqual(expected);
     });
 
     it('should successfully return an empty array when messages.length === 0', async () => {
-      const response = await request(app.app)
+      const response = await request(testUtils.getApp())
         .get(
           `/api/direct-messages?teammateId=${userInDB.id}&workspaceId=${workspaceInDB.id}`
         )

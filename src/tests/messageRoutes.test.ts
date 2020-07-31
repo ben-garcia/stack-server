@@ -24,10 +24,7 @@ describe('Message Routes', () => {
       .create(fakeUser.base)
       .save();
 
-    // testUtils.setupEntitiesForComparison('users', [userInDB]);
-
-    delete userInDB.hashPassword;
-    delete userInDB.password;
+    testUtils.setupEntitiesForComparison('users', [userInDB]);
 
     const workspace = {
       name: 'channel workspace',
