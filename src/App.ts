@@ -8,6 +8,7 @@ import morgan from 'morgan';
 import Redis from 'ioredis';
 import socketio from 'socket.io';
 
+import { addTestRoutes } from './utils';
 import { Controller } from './controllers/types';
 import { UserConnected } from './types';
 
@@ -187,6 +188,12 @@ class App {
     controllers.forEach(controller => {
       this.app.use(`/api${controller.path}`, controller.router);
     });
+
+    if (process.env.NODE_ENV === 'development') {
+      // add routes for e2e tests
+      addTestRoutes(this.app);
+    }
+
     // catch undefined endpoints
     this.app.use((req: Request, res: Response) => {
       const { url, method } = req;
