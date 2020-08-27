@@ -11,33 +11,35 @@ import { Channel, DirectMessage, Message, User, Workspace } from '../entity';
  */
 const addTestRoutes = (app: Application) => {
   app.post('/tests/channels', async (req: Request, res: Response) => {
-    const channel = (getRepository<Channel>(Channel).create(
+    const channel = await (getRepository<Channel>(Channel).create(
       req.body
     ) as any).save();
     res.json(channel);
   });
 
   app.post('/tests/direct-messages', async (req: Request, res: Response) => {
-    const directMessage = (getRepository<DirectMessage>(DirectMessage).create(
-      req.body
-    ) as any).save();
+    const directMessage = await (getRepository<DirectMessage>(
+      DirectMessage
+    ).create(req.body) as any).save();
     res.json(directMessage);
   });
 
   app.post('/tests/messages', async (req: Request, res: Response) => {
-    const message = (getRepository<Message>(Message).create(
+    const message = await (getRepository<Message>(Message).create(
       req.body
     ) as any).save();
     res.json(message);
   });
 
   app.post('/tests/users', async (req: Request, res: Response) => {
-    const user = (getRepository<User>(User).create(req.body) as any).save();
+    const user = await (getRepository<User>(User).create(
+      req.body
+    ) as any).save();
     res.json(user);
   });
 
   app.post('/tests/workspaces', async (req: Request, res: Response) => {
-    const workspace = (getRepository<Workspace>(Workspace).create(
+    const workspace = await (getRepository<Workspace>(Workspace).create(
       req.body
     ) as any).save();
     res.json(workspace);
@@ -52,7 +54,7 @@ const addTestRoutes = (app: Application) => {
     await getRepository<Workspace>(Workspace).query('DELETE FROM workspaces');
     await getRepository<User>(User).query('DELETE FROM users');
 
-    res.json({});
+    res.json({ message: 'tables dropped' });
   });
 };
 
