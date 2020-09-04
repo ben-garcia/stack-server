@@ -40,12 +40,27 @@ This repo contains the back-end code for stack which is a miniature slack clone 
    `cd client` and `npm install` or `yarn`
 
 3. clone server repo with
+
    `git clone git@github.com:ben-garcia/stack-server.git server`
 
 4. install dependencies with
    `cd server` and `npm install` or `yarn`
 
-5. run the tests `npm test` or `yarn test`
+5. run the tests
+
+   - jest
+
+     `npm test` or `yarn test`
+
+   - cypress
+
+     - via gui
+
+       `npm run cy:open` or `yarn cy:open`
+
+     - via terminal
+
+       `npm rn cy:run` or `yarn cy:run`
 
 6) start the server `npm start` or `yarn start` which will start the server on port 8080.
 
