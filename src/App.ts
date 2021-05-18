@@ -153,10 +153,8 @@ class App {
     this.app.use(
       cors({
         credentials: true, // pass the 'Cookie' header
-        methods: ['GET', 'POST', 'PUT'], // supported http methods
-        origin: process.env.CLIENT_URL
-          ? process.env.CLIENT_URL
-          : 'http://localhost:3000',
+        methods: ['GET', 'OPTIONS', 'POST', 'PUT'], // supported http methods
+        origin: process.env.CLIENT_URL ?? 'http://localhost:3000',
       })
     ); // enable cors
     // session + cookie information
