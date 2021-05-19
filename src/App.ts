@@ -35,7 +35,9 @@ class App {
   }
 
   private initializeSocketIO(): void {
-    this.io = socketio(this.server);
+    this.io = socketio(this.server, {
+      origins: process.env.CLIENT_URL ?? 'http://localhost:3000',
+    });
     this.io.on('connection', (socket: socketio.Socket) => {
       socket.on(
         'user-connected',
