@@ -145,7 +145,15 @@ class App {
     if (process.env.REDIS_URL && process.env.NODE_ENV === 'production') {
       redisClient = new Redis(
         // after upgrading Heroku Redis from 5 to 6
-        process.env.REDIS_TLS_URL || process.env.REDIS_URL
+        // @see https://devcenter.heroku.com/articles/heroku-redis-hobby-deprecation#updates-to-your-add-on-configuration
+        process.env.REDIS_TLS_URL || process.env.REDIS_URL,
+        {
+          // skip certificate verification
+          // @see https://devcenter.heroku.com/articles/heroku-redis
+          tls: {
+            rejectUnauthorized: false,
+          },
+        }
       );
     } else {
       // use localhost in development
