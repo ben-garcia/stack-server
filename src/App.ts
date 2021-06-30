@@ -176,7 +176,8 @@ class App {
         cookie: {
           httpOnly: true, // default
           maxAge: 1000 * 60 * 60 * 24 * 30, // 1 month
-          path: '/api',
+          // send the cookie with every request reguardless of URL.
+          path: '/',
           sameSite: 'none',
           secure: process.env.NODE_ENV === 'production', // set in production
         },
