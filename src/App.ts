@@ -184,7 +184,7 @@ class App {
           secure: process.env.NODE_ENV === 'production', // set in production
         },
         name: 'stackSessionId', // name for the session id cookie
-        // proxy: true, // save session cookie id to client in Heroku
+        proxy: true, // save session cookie id to client in Heroku
         resave: false, // only save the session if it was modified during request
         saveUninitialized: false, // for login session
         secret: process.env.REDIS_SECRET ?? 'keyboard_cat',
