@@ -177,10 +177,14 @@ class App {
     this.app.use(
       session({
         cookie: {
+          domain:
+            process.env.NODE_ENV === 'production'
+              ? 'stackapplication.herokuapp.com'
+              : 'localhost',
           httpOnly: true, // default
           maxAge: 1000 * 60 * 60 * 24 * 30, // 1 month
-          // send the cookie with every request reguardless of URL.
-          path: '/',
+          // send the cookie with every request to the api
+          path: '/api',
           sameSite: 'none',
           secure: process.env.NODE_ENV === 'production', // set in production
         },
