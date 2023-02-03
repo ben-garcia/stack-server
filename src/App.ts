@@ -179,13 +179,13 @@ class App {
         cookie: {
           domain:
             process.env.NODE_ENV === 'production'
-              ? 'stackapplication.herokuapp.com'
+              ? 'stackapplication.onrender.com'
               : 'localhost',
           httpOnly: true, // default
           maxAge: 1000 * 60 * 60 * 24 * 30, // 1 month
           // send the cookie with every request to the api
           path: '/api',
-          sameSite: 'none',
+          sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
           secure: process.env.NODE_ENV === 'production', // set in production
         },
         name: 'stackSessionId', // name for the session id cookie

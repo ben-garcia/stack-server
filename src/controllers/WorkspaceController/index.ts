@@ -181,7 +181,7 @@ class WorkspaceController implements Controller {
 
       // prevent adding a test account as a teammate
       usernames = usernames.filter(
-        u => u !== 'stackguest' && u !== 'stacktestuser'
+        u => u !== 'stackguest2' && u !== 'stacktestuser2'
       );
 
       if (usernames.length > 0) {
