@@ -14,8 +14,8 @@ const checkForTestAccounts = (
   // and prevent the request from moving up the chain
   if (
     (method === 'POST' || method === 'PUT') &&
-    (req.session!.username === 'stackguest2' ||
-      req.session!.username === 'stacktestuser2')
+    (req.session!.username === 'stackguest' ||
+      req.session!.username === 'stacktestuser')
   ) {
     res.status(403).json({ error: 'Resource cannot be modified nor created' });
   } else {

@@ -179,7 +179,7 @@ class App {
         cookie: {
           domain:
             process.env.NODE_ENV === 'production'
-              ? 'stackapplication.onrender.com'
+              ? 'stackapplication.herokuapp.com'
               : 'localhost',
           httpOnly: true, // default
           maxAge: 1000 * 60 * 60 * 24 * 30, // 1 month
