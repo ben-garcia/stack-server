@@ -55,6 +55,11 @@ import { createTypeormConnection } from './utils';
     redisClient = new Redis({ password: 'ben' });
   }
 
+   // Add error handler
+  redisClient.on('error', (err) => {
+    console.error('Redis connection error:', err);
+  });
+
   const app = new App([
     new AuthenticationController(new UserService(getRepository<User>(User))),
     new ChannelController(
