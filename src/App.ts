@@ -163,6 +163,11 @@ class App {
       redisClient = new Redis({ password: 'ben' });
     }
 
+  // Add error handler
+  redisClient.on('error', (err) => {
+    console.error('Redis connection error:', err);
+  });
+
     this.app.use(express.json()); // parse application/json in req.body
     this.app.use(morgan('dev')); // logger
     this.app.use(helmet()); // sets up various HTTP headers for security
