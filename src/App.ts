@@ -18,6 +18,7 @@ class App {
   public app: Application;
   private server: http.Server;
   private io: socketio.Server;
+  private redisClient: Redis.Redis;
   // users with be store as:
   // socketIO will map to tuple containing
   // username,
@@ -25,10 +26,11 @@ class App {
   // channelName(which is either channel or teammate)
   private users: Map<string, [string, string, string]>;
 
-  constructor(controllers: Controller[]) {
+  constructor(controllers: Controller[], redisClient: Redis.Redis) {
     this.app = express();
     this.server = http.createServer(this.app);
     this.users = new Map();
+    this.redisClient = redisClient;
 
     this.initializeMiddleware();
     this.initializeControllers(controllers);
@@ -140,34 +142,6 @@ class App {
 
   // add the middlewares for the application.
   private initializeMiddleware(): void {
-    let redisClient: Redis.Redis;
-
-    if (
-      (process.env.REDIS_TLS_URL || process.env.REDIS_URL) &&
-      process.env.NODE_ENV === 'production'
-    ) {
-      redisClient = new Redis(
-        // after upgrading Heroku Redis from 5 to 6
-        // @see https://devcenter.heroku.com/articles/heroku-redis-hobby-deprecation#updates-to-your-add-on-configuration
-        process.env.REDIS_TLS_URL || process.env.REDIS_URL,
-        {
-          // skip certificate verification
-          // @see https://devcenter.heroku.com/articles/heroku-redis
-          tls: {
-            rejectUnauthorized: false,
-          },
-        }
-      );
-    } else {
-      // use localhost in development
-      redisClient = new Redis({ password: 'ben' });
-    }
-
-  // Add error handler
-  redisClient.on('error', (err) => {
-    console.error('Redis connection error:', err);
-  });
-
     this.app.use(express.json()); // parse application/json in req.body
     this.app.use(morgan('dev')); // logger
     this.app.use(helmet()); // sets up various HTTP headers for security
@@ -199,7 +173,7 @@ class App {
         saveUninitialized: false, // for login session
         secret: process.env.REDIS_SECRET ?? 'keyboard_cat',
         store: new RedisStore({
-          client: redisClient,
+          client: this.redisClient,
         }),
       })
     );

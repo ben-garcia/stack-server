@@ -56,35 +56,38 @@ import { createTypeormConnection } from './utils';
   }
 
   // Add error handler
-  redisClient.on('error', (err) => {
+  redisClient.on('error', err => {
     console.error('Redis connection error:', err);
   });
 
-  const app = new App([
-    new AuthenticationController(new UserService(getRepository<User>(User))),
-    new ChannelController(
-      new ChannelService(getRepository<Channel>(Channel)),
-      new RedisService(redisClient),
-      new UserService(getRepository<User>(User)),
-      new WorkspaceService(getRepository<Workspace>(Workspace))
-    ),
-    new DirectMessageController(
-      new DirectMessageService(getRepository<DirectMessage>(DirectMessage)),
-      new RedisService(redisClient),
-      new UserService(getRepository<User>(User))
-    ),
-    new MessageController(
-      new ChannelService(getRepository<Channel>(Channel)),
-      new MessageService(getRepository<Message>(Message)),
-      new RedisService(redisClient),
-      new UserService(getRepository<User>(User))
-    ),
-    new WorkspaceController(
-      new RedisService(redisClient),
-      new UserService(getRepository<User>(User)),
-      new WorkspaceService(getRepository<Workspace>(Workspace))
-    ),
-  ]);
+  const app = new App(
+    [
+      new AuthenticationController(new UserService(getRepository<User>(User))),
+      new ChannelController(
+        new ChannelService(getRepository<Channel>(Channel)),
+        new RedisService(redisClient),
+        new UserService(getRepository<User>(User)),
+        new WorkspaceService(getRepository<Workspace>(Workspace))
+      ),
+      new DirectMessageController(
+        new DirectMessageService(getRepository<DirectMessage>(DirectMessage)),
+        new RedisService(redisClient),
+        new UserService(getRepository<User>(User))
+      ),
+      new MessageController(
+        new ChannelService(getRepository<Channel>(Channel)),
+        new MessageService(getRepository<Message>(Message)),
+        new RedisService(redisClient),
+        new UserService(getRepository<User>(User))
+      ),
+      new WorkspaceController(
+        new RedisService(redisClient),
+        new UserService(getRepository<User>(User)),
+        new WorkspaceService(getRepository<Workspace>(Workspace))
+      ),
+    ],
+    redisClient
+  );
 
   app.listen();
 })();
