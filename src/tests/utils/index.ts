@@ -77,31 +77,36 @@ class TestUtils {
   }
 
   initApp(): void {
-    this.app = new App([
-      new AuthenticationController(new UserService(getRepository<User>(User))),
-      new ChannelController(
-        new ChannelService(getRepository<Channel>(Channel)),
-        new RedisService(new Redis({ password: 'ben' })),
-        new UserService(getRepository<User>(User)),
-        new WorkspaceService(getRepository<Workspace>(Workspace))
-      ),
-      new DirectMessageController(
-        new DirectMessageService(getRepository<DirectMessage>(DirectMessage)),
-        new RedisService(new Redis({ password: 'ben' })),
-        new UserService(getRepository<User>(User))
-      ),
-      new MessageController(
-        new ChannelService(getRepository<Channel>(Channel)),
-        new MessageService(getRepository<Message>(Message)),
-        new RedisService(new Redis({ password: 'ben' })),
-        new UserService(getRepository<User>(User))
-      ),
-      new WorkspaceController(
-        new RedisService(new Redis({ password: 'ben' })),
-        new UserService(getRepository<User>(User)),
-        new WorkspaceService(getRepository<Workspace>(Workspace))
-      ),
-    ]);
+    this.app = new App(
+      [
+        new AuthenticationController(
+          new UserService(getRepository<User>(User))
+        ),
+        new ChannelController(
+          new ChannelService(getRepository<Channel>(Channel)),
+          new RedisService(new Redis({ password: 'ben' })),
+          new UserService(getRepository<User>(User)),
+          new WorkspaceService(getRepository<Workspace>(Workspace))
+        ),
+        new DirectMessageController(
+          new DirectMessageService(getRepository<DirectMessage>(DirectMessage)),
+          new RedisService(new Redis({ password: 'ben' })),
+          new UserService(getRepository<User>(User))
+        ),
+        new MessageController(
+          new ChannelService(getRepository<Channel>(Channel)),
+          new MessageService(getRepository<Message>(Message)),
+          new RedisService(new Redis({ password: 'ben' })),
+          new UserService(getRepository<User>(User))
+        ),
+        new WorkspaceController(
+          new RedisService(new Redis({ password: 'ben' })),
+          new UserService(getRepository<User>(User)),
+          new WorkspaceService(getRepository<Workspace>(Workspace))
+        ),
+      ],
+      {} as any
+    );
   }
 
   setupEntitiesForComparison(entityType: string, entities: Entity[]): Entity[] {
