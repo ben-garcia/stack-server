@@ -1,4 +1,4 @@
-# Stack
+# Stack (heroku-26)
 
 This repo contains the back-end code for stack which is a miniature slack clone using Node/Express/TypeORM.
 
