@@ -45,6 +45,8 @@ class App {
           callback(new Error('Not allowed by CORS'), false);
         }
       }) as any,
+      // Disable the unnecessary polling cookie to prevent cross-site browser rejections
+      cookie: false,
     });
     // this.io = socketio(this.server, {
     //   origins: process.env.CLIENT_URL ?? 'http://localhost:3000',
@@ -171,6 +173,7 @@ class App {
               : 'localhost',
           httpOnly: true, // default
           maxAge: 1000 * 60 * 60 * 24 * 30, // 1 month
+          partitioned: true,
           // send the cookie with every request to the api
           path: '/api',
           sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
