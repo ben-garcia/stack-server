@@ -3,8 +3,12 @@ import Redis from 'ioredis';
 
 let client: Redis;
 
-if (process.env.REDIS_URL && process.env.NODE_ENV === 'production') {
-  client = new Redis(process.env.REDIS_URL);
+if (process.env.REDIS_URL) {
+  client = new Redis(process.env.REDIS_URL, {
+    tls: {
+      rejectUnauthorized: false, // Required for Heroku/managed Redis TLS certificates
+    },
+  });
 } else {
   // client = new Redis({ password: 'ben' });
   // use localhost in development
