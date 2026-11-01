@@ -82,12 +82,12 @@ class ChannelController implements Controller {
     try {
       const { workspaceId } = req.query;
       // get session properties
-      const { userId, username } = req.session!;
+      const { userId, username } = req.session as any;
       // query the dd for all channels that belong to a particular workspace
       // and that that a particular user  as a member
       const channels = await this.channelService.getChannelsByIds(
-        userId,
-        workspaceId
+        userId as string,
+        workspaceId as string
       );
 
       // make sure that the user has at least 1 channel
@@ -117,18 +117,18 @@ class ChannelController implements Controller {
       // eslint-disable-next-line
       channel?.members.forEach((m: User) => {
         // eslint-disable-next-line
-        delete m.createdAt;
+        delete (m as { createdAt?: Date }).createdAt;
         // eslint-disable-next-line
-        delete m.email;
+        delete (m as { email?: string }).email;
         // eslint-disable-next-line
-        delete m.password;
+        delete (m as { password?: string }).password;
         // eslint-disable-next-line
-        delete m.updatedAt;
+        delete (m as { updatedAt?: Date }).updatedAt;
       });
 
-      if (channel?.members!.length > 0) {
+      if (channel!.members!.length > 0) {
         // having passed userSession middleware
-        const { userId, username } = req.session!;
+        const { userId, username } = req.session as any;
         // save to Redis with a 1 hour expiration
         this.redisService.saveKey(
           `user:${userId}-${username}:members`,
@@ -152,30 +152,31 @@ class ChannelController implements Controller {
       const validatedChannel = await this.schema.validateAsync(
         req.body.channel
       );
-      // get the user id
-      const { userId, username } = req.session!;
+      const { userId, username } = req.session as any;
       // store the users to add as members
       const members: User[] = [];
       // get the creator of the channel
-      const user = await this.userService.getById(userId);
+      const user = await this.userService.getById(userId as number);
 
       if (user) {
         members.push(user);
       }
 
-      // only query the db if there is at least 2 members(including the user)
-      // and channel should be set to public
-      if (req.body.channel.members?.length > 1 && !validatedChannel.private) {
-        req.body.channel.members.forEach(async (u: string) => {
-          // query the db for the username
-          const newMember = await this.userService.getByUsername(u);
+      if (
+        validatedChannel.members &&
+        validatedChannel.members.length > 0 &&
+        !validatedChannel.private
+      ) {
+        const fetchedMembers = await Promise.all(
+          validatedChannel.members.map((u: string) =>
+            this.userService.getByUsername(u)
+          )
+        );
 
-          // if there is record,
-          // add it the members array
-          if (newMember) {
-            members.push(newMember);
-          }
-        });
+        const validMembers = fetchedMembers.filter(
+          (m): m is User => m !== null && m !== undefined
+        );
+        members.push(...validMembers);
       }
 
       const workspace = await this.workspaceService.getWorkspaceById(
@@ -183,7 +184,7 @@ class ChannelController implements Controller {
       );
 
       if (workspace) {
-        // if no errors then add the record
+        // if no errors then add the new channel
         const channel = await this.channelService.create({
           name: validatedChannel.name,
           description: validatedChannel.description,
@@ -192,24 +193,24 @@ class ChannelController implements Controller {
           members: [...members],
         });
 
-        // remove the workspace before sending it
-        delete channel.workspace;
-        // remove the members before sending to the client
-        delete channel?.members;
+        if (channel.members) {
+          channel.members.forEach((innerUser: User) => {
+            // eslint-disable-next-line no-param-reassign
+            delete (innerUser as { hashPassword?: any }).hashPassword;
+            // eslint-disable-next-line no-param-reassign
+            delete (innerUser as { password?: string }).password;
+          });
+        }
 
-        // remove members passwords
-        channel.members.forEach((innerUser: User) => {
-          // eslint-disable-next-line no-param-reassign
-          delete innerUser.hashPassword;
-          // eslint-disable-next-line no-param-reassign
-          delete innerUser.password;
-        });
+        const channelResponse: any = { ...channel };
+        delete channelResponse.workspace;
+        delete channelResponse.members;
 
-        // Having added a another channel, delete channels from Redis
-        // which will cause the server to qeury the db for the updated list
         this.redisService.deleteKey(`user:${userId}-${username}:channels`);
 
-        res.status(201).json({ message: 'Channel Created', channel });
+        res
+          .status(201)
+          .json({ message: 'Channel Created', channel: channelResponse });
       }
     } catch (e) {
       // eslint-disable-next-line
@@ -218,9 +219,81 @@ class ChannelController implements Controller {
     }
   };
 
+  // public createChannel = async (req: Request, res: Response) => {
+  //   try {
+  //     // verify that the channel being created matches schema.
+  //     const validatedChannel = await this.schema.validateAsync(
+  //       req.body.channel
+  //     );
+  //     // get the user id
+  //     const { userId, username } = req.session as any;
+  //     // store the users to add as members
+  //     const members: User[] = [];
+  //     // get the creator of the channel
+  //     const user = await this.userService.getById(userId as number);
+  //
+  //     if (user) {
+  //       members.push(user);
+  //     }
+  //
+  //     // only query the db if there is at least 2 members(including the user)
+  //     // and channel should be set to public
+  //     if (req.body.channel.members?.length > 1 && !validatedChannel.private) {
+  //       req.body.channel.members.forEach(async (u: string) => {
+  //         // query the db for the username
+  //         const newMember = await this.userService.getByUsername(u);
+  //
+  //         // if there is record,
+  //         // add it the members array
+  //         if (newMember) {
+  //           members.push(newMember);
+  //         }
+  //       });
+  //     }
+  //
+  //     const workspace = await this.workspaceService.getWorkspaceById(
+  //       Number(validatedChannel!.workspace)
+  //     );
+  //
+  //     if (workspace) {
+  //       // if no errors then add the record
+  //       const channel = await this.channelService.create({
+  //         name: validatedChannel.name,
+  //         description: validatedChannel.description,
+  //         private: validatedChannel.private,
+  //         workspace,
+  //         members: [...members],
+  //       });
+  //
+  //       // remove the workspace before sending it
+  //       delete (channel as { workspace?: any }).workspace;
+  //       // remove the members before sending to the client
+  //       delete (channel as any).members;
+  //
+  //       // remove members passwords
+  //       channel.members.forEach((innerUser: User) => {
+  //         // eslint-disable-next-line no-param-reassign
+  //         delete (innerUser as { hashPassword?: any }).hashPassword;
+  //         // eslint-disable-next-line no-param-reassign
+  //         delete (innerUser as { password?: string }).password;
+  //       });
+  //
+  //       // Having added a another channel, delete channels from Redis
+  //       // which will cause the server to qeury the db for the updated list
+  //       this.redisService.deleteKey(`user:${userId}-${username}:channels`);
+  //
+  //       res.status(201).json({ message: 'Channel Created', channel });
+  //     }
+  //   } catch (e) {
+  //     // eslint-disable-next-line
+  //     console.log('createChannel Error: ', e);
+  //     res.status(409).json({ error: e });
+  //   }
+  // };
+
   public updateChannel = async (req: Request, res: Response) => {
     try {
-      const { userId, username } = req.session!;
+      const { userId, username } = req.session as any;
       const { channelId } = req.params;
 
       if (

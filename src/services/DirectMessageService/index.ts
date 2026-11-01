@@ -32,8 +32,8 @@ class DirectMessageService {
       order: { createdAt: 'ASC' },
       relations: ['user'],
       where: [
-        { user: teammateId, workspaceId },
-        { user: userId, workspaceId },
+        { user: { id: teammateId }, workspaceId },
+        { user: { id: userId }, workspaceId },
       ],
     });
   }

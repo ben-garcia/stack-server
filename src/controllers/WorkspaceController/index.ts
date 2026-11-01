@@ -65,11 +65,11 @@ class WorkspaceController implements Controller {
     res: Response
   ): Promise<void> => {
     try {
-      const { userId, username } = req.session!;
+      const { userId, username } = req.session as any;
       // all workspaces that a user is a member
       // which are those that the user has created or have been invited to
       const workspaces = await this.workspaceService.getUserWorkspacesById(
-        userId
+        userId as string
       );
 
       // make sure that the user has at least 1 workspace
@@ -106,7 +106,7 @@ class WorkspaceController implements Controller {
 
       if (teammates.length > 0) {
         // having passed userSession middleware
-        const { userId, username } = req.session!;
+        const { userId, username } = req.session as any;
         // save to Redis with a 1 hour expiration
         this.redisService.saveKey(
           `user:${userId}-${username}:teammates`,
@@ -132,7 +132,7 @@ class WorkspaceController implements Controller {
       const validatedWorkspace = await this.schema.validateAsync(req.body);
       const user = await this.userService.getById(validatedWorkspace.owner);
       let workspace;
-      const { userId, username } = req.session!;
+      const { userId, username } = req.session as any;
 
       if (user) {
         // if no errors then add the record
@@ -143,8 +143,8 @@ class WorkspaceController implements Controller {
         });
 
         // remove the user before sending it
-        delete workspace.owner;
-        delete workspace.teammates;
+        delete (workspace as any).owner;
+        delete (workspace as any).teammates;
 
         // Having added a another workspace, delete workspaces from Redis
         // which will cause the server to qeury the db for the updated list
@@ -155,7 +155,7 @@ class WorkspaceController implements Controller {
         res.status(404).json({ error: 'No user exists with that id' });
       }
     } catch (e) {
-      res.status(409).json({ error: e.message });
+      res.status(409).json({ error: (e as Error).message });
     }
   };
 
@@ -164,7 +164,7 @@ class WorkspaceController implements Controller {
     res: Response
   ): Promise<void> => {
     try {
-      const { userId, username } = req.session!;
+      const { userId, username } = req.session as any;
       const { workspaceId } = req.params;
       // list of users that have been validated
       const teammates: User[] = [];
@@ -177,7 +177,7 @@ class WorkspaceController implements Controller {
 
       // get the usernames passed in the request body
       let usernames = Object.values(req.body);
-      let user: User | undefined;
+      let user: User | null;
 
       // prevent adding a test account as a teammate
       usernames = usernames.filter(
@@ -191,7 +191,7 @@ class WorkspaceController implements Controller {
 
           if (user) {
             // don't send user's password to the client
-            delete user.password;
+            delete (user as any).password;
             // valid teammate
             teammates.push(user);
           } else {

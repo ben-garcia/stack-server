@@ -1,6 +1,6 @@
 import express, { Request, Response, Router } from 'express';
 import Joi, { ObjectSchema } from '@hapi/joi';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 
 import { checkUserSession } from '../../middlewares';
 import { UserService } from '../../services';
@@ -75,7 +75,11 @@ class AuthenticationController implements Controller {
       } else {
         res.status(409).json({ error: errors });
       }
-    } catch (e) {
+    } catch (err) {
+      const e = err as {
+        details?: Array<{ message: string }>;
+        detail?: string;
+      };
       // eslint-disable-next-line no-console
       // console.log('error in registerUser: ', e);
       if (e.details) {
@@ -115,20 +119,26 @@ class AuthenticationController implements Controller {
         if (user && match) {
           // add the user id and username to the session
           if (req.session && req.method === 'POST') {
-            req.session.userId = user.id;
-            req.session.username = user.username;
+            (req.session as any).userId = user.id;
+            (req.session as any).username = user.username;
           }
+          // Explicitly wait for Redis to finish saving the session data
+          req.session.save(err => {
+            if (err) {
+              console.error('Session save error:', err);
+              return res.status(500).json({ error: 'Session save failed' });
+            }
 
-          // don't send the user's password
-          delete user.password;
+            // Don't send password back
+            delete (user as { password?: string }).password;
 
-          res.status(200).json({ user });
+            return res.status(200).json({ user });
+          });
         }
       }
     } catch (e) {
       // getting error when running unit test
       // eslint-disable-next-line
-      // console.log('loginUser error: ', e);
       res
         .status(409)
         .json({ error: 'No user with that email/password combination' });
@@ -136,7 +146,7 @@ class AuthenticationController implements Controller {
   };
 
   public logoutUser = (req: Request, res: Response): void => {
-    const { username } = req.session!;
+    const { username } = req.session as any;
     req.session!.destroy(err => {
       if (err) {
         // eslint-disable-next-line

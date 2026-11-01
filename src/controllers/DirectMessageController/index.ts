@@ -62,7 +62,7 @@ class DirectMessageController implements Controller {
     try {
       // get the channel id and workspace id
       const { teammateId, workspaceId } = req.query;
-      const { userId, username } = req.session!;
+      const { userId, username } = req.session as any;
       const user = await this.userService.getById(Number(userId));
 
       if (user) {
@@ -76,15 +76,15 @@ class DirectMessageController implements Controller {
         // quick fix, there should be a better way to do this in typeorm
         directMessages.forEach((m: DirectMessage) => {
           // eslint-disable-next-line
-          delete m.user.password;
+          delete (m as any).user.password;
           // eslint-disable-next-line
-          delete m.user.id;
+          delete (m as any).user.id;
           // eslint-disable-next-line
-          delete m.user.email;
+          delete (m as any).user.email;
           // eslint-disable-next-line
-          delete m.user.createdAt;
+          delete (m as any).user.createdAt;
           // eslint-disable-next-line
-          delete m.user.updatedAt;
+          delete (m as any).user.updatedAt;
         });
 
         // make sure that the user has at least 1 direct message with teammate
@@ -114,7 +114,7 @@ class DirectMessageController implements Controller {
       const validatedDirectMessage = await this.schema.validateAsync(
         req.body.message
       );
-      const { userId: sessionUserId, username } = req.session!;
+      const { userId: sessionUserId, username } = req.session as any;
       const { user: userId, workspaceId } = req.body.message;
       // get the user who created the message from the db
       const user = await this.userService.getById(userId);
@@ -128,7 +128,7 @@ class DirectMessageController implements Controller {
         });
 
         //  remove the user before sending it
-        delete directMessage.user;
+        delete (directMessage as any).user;
 
         // Having added a another direct message, delete directMessages from Redis
         // which will cause the server to qeury the db for the updated list

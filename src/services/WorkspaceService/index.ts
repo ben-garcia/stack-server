@@ -28,7 +28,7 @@ class WorkspaceService {
         SELECT workspaces.id, workspaces.name, workspaces."ownerId" FROM workspaces INNER JOIN user_workspaces ON workspaces.id = user_workspaces.workspace INNER JOIN users ON user_workspaces.user = users.id and users.id = ${userId}`);
   }
 
-  async getWorkspaceById(workspaceId: number): Promise<Workspace | undefined> {
+  async getWorkspaceById(workspaceId: number): Promise<Workspace | null> {
     return this.workspaceRepository.findOne({
       where: { id: workspaceId },
       relations: ['teammates'],

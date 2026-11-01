@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
-    "target": "es5",
+    "target": "es6",
+    "types": ["node", "jest", "express-session"],
     "module": "commonjs",
     "lib": ["dom", "es6", "es2017", "esnext.asynciterable"],
     "sourceMap": true,
@@ -15,6 +16,7 @@
     "strictNullChecks": true,
     "strictFunctionTypes": true,
     "strictPropertyInitialization": false,
+    "skipLibCheck": true,
     "noImplicitThis": true,
     "alwaysStrict": true,
     "noUnusedLocals": true,

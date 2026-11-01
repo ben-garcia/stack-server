@@ -10,7 +10,7 @@ import {
   JoinTable,
   BeforeInsert,
 } from 'typeorm';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 
 import { Channel, DirectMessage, Workspace, Message } from '.';
 

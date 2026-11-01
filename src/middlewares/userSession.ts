@@ -6,9 +6,9 @@ import { Request, Response, NextFunction } from 'express';
 const checkUserSession = (req: Request, res: Response, next: NextFunction) => {
   const { session } = req;
 
-  // if there is no session request shouldn't continue
+  // if there is no session, request shouldn't continue
   // if no userId then request doesn't include session cookie
-  if (!session || !session.userId) {
+  if (!session || (!session as any).userId) {
     res.status(401).json({ error: 'Unauthorized' });
   } else {
     // given that the session object exists

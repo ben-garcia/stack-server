@@ -18,7 +18,7 @@ class App {
   public app: Application;
   private server: http.Server;
   private io: socketio.Server;
-  private redisClient: Redis.Redis;
+  private redisClient: Redis;
   // users with be store as:
   // socketIO will map to tuple containing
   // username,
@@ -26,7 +26,7 @@ class App {
   // channelName(which is either channel or teammate)
   private users: Map<string, [string, string, string]>;
 
-  constructor(controllers: Controller[], redisClient: Redis.Redis) {
+  constructor(controllers: Controller[], redisClient: Redis) {
     this.app = express();
     this.server = http.createServer(this.app);
     this.users = new Map();
@@ -174,6 +174,7 @@ class App {
         secret: process.env.REDIS_SECRET ?? 'keyboard_cat',
         store: new RedisStore({
           client: this.redisClient,
+          prefix: 'sess:',
         }),
       })
     );

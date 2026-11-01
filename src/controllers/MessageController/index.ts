@@ -61,7 +61,7 @@ class MessageController implements Controller {
     try {
       // get the channel id passed in as a parameter
       const { channelId } = req.query;
-      const { userId, username } = req.session!;
+      const { userId, username } = req.session as any;
       // get the correct channel from the db
       const messages = await this.messageService.getAllByChannelId(
         Number(channelId)
@@ -70,15 +70,15 @@ class MessageController implements Controller {
       // quick fix, there should be a better way to do this in typeorm
       messages.forEach((m: Message) => {
         // eslint-disable-next-line
-        delete m.user.password;
+        delete (m as any).user.password;
         // eslint-disable-next-line
-        delete m.user.id;
+        delete (m as any).user.id;
         // eslint-disable-next-line
-        delete m.user.email;
+        delete (m as any).user.email;
         // eslint-disable-next-line
-        delete m.user.createdAt;
+        delete (m as any).user.createdAt;
         // eslint-disable-next-line
-        delete m.user.updatedAt;
+        delete (m as any).user.updatedAt;
       });
 
       // make sure that the user has at least 1 channel
@@ -106,7 +106,7 @@ class MessageController implements Controller {
       const validatedMessage = await this.schema.validateAsync(
         req.body.message
       );
-      const { userId: sessionUserId, username } = req.session!;
+      const { userId: sessionUserId, username } = req.session as any;
       const { channel: channelId, user: userId } = req.body.message;
       // get the channel to add the message
       const channel = await this.channelService.getById(channelId);
@@ -122,9 +122,9 @@ class MessageController implements Controller {
         });
 
         //  remove the user before sending it
-        delete message.user;
+        delete (message as any).user;
         //  remove the channel before sending to the client
-        delete message.channel;
+        delete (message as any).channel;
 
         // Having added a another message, delete messages from Redis
         // which will cause the server to qeury the db for the updated list

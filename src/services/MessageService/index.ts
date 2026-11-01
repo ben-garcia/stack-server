@@ -42,7 +42,7 @@ class MessageService {
 
   async getAllByChannelId(channelId: number): Promise<Message[]> {
     return this.messageRepository.find({
-      where: { channel: channelId },
+      where: { channel: { id: channelId } },
       relations: ['user'],
       order: { createdAt: 'ASC' },
     });

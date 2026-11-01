@@ -1,6 +1,5 @@
 import 'reflect-metadata';
 import Redis from 'ioredis';
-import { getRepository } from 'typeorm';
 
 import App from './App';
 import {
@@ -19,7 +18,10 @@ import {
   UserService,
   WorkspaceService,
 } from './services';
-import { createTypeormConnection } from './utils';
+import {
+  createTypeormConnection,
+  AppDataSource,
+} from './utils/createTypeormConnection';
 
 (async () => {
   try {
@@ -32,24 +34,24 @@ import { createTypeormConnection } from './utils';
   // eslint-disable-next-line no-console
   console.log('Connection to the db established.');
 
-  let redisClient: Redis.Redis;
+  let redisClient: Redis;
 
   if (
     (process.env.REDIS_TLS_URL || process.env.REDIS_URL) &&
     process.env.NODE_ENV === 'production'
   ) {
-    redisClient = new Redis(
-      // after upgrading Heroku Redis from 5 to 6
-      // @see https://devcenter.heroku.com/articles/heroku-redis-hobby-deprecation#updates-to-your-add-on-configuration
-      process.env.REDIS_TLS_URL || process.env.REDIS_URL,
-      {
-        // skip certificate verification
-        // @see https://devcenter.heroku.com/articles/heroku-redis
-        tls: {
-          rejectUnauthorized: false,
-        },
-      }
-    );
+    // Store the URL in a local constant first so TypeScript can narrow its type safely
+    // after upgrading Heroku Redis from 5 to 6
+    // @see https://devcenter.heroku.com/articles/heroku-redis-hobby-deprecation#updates-to-your-add-on-configuration
+    const redisUrl = process.env.REDIS_TLS_URL || process.env.REDIS_URL;
+
+    redisClient = new Redis(redisUrl as any, {
+      // skip certificate verification
+      // @see https://devcenter.heroku.com/articles/heroku-redis
+      tls: {
+        rejectUnauthorized: false,
+      },
+    });
   } else {
     // use localhost in development
     redisClient = new Redis({ password: 'ben' });
@@ -62,28 +64,32 @@ import { createTypeormConnection } from './utils';
 
   const app = new App(
     [
-      new AuthenticationController(new UserService(getRepository<User>(User))),
+      new AuthenticationController(
+        new UserService(AppDataSource.getRepository<User>(User))
+      ),
       new ChannelController(
-        new ChannelService(getRepository<Channel>(Channel)),
+        new ChannelService(AppDataSource.getRepository<Channel>(Channel)),
         new RedisService(redisClient),
-        new UserService(getRepository<User>(User)),
-        new WorkspaceService(getRepository<Workspace>(Workspace))
+        new UserService(AppDataSource.getRepository<User>(User)),
+        new WorkspaceService(AppDataSource.getRepository<Workspace>(Workspace))
       ),
       new DirectMessageController(
-        new DirectMessageService(getRepository<DirectMessage>(DirectMessage)),
+        new DirectMessageService(
+          AppDataSource.getRepository<DirectMessage>(DirectMessage)
+        ),
         new RedisService(redisClient),
-        new UserService(getRepository<User>(User))
+        new UserService(AppDataSource.getRepository<User>(User))
       ),
       new MessageController(
-        new ChannelService(getRepository<Channel>(Channel)),
-        new MessageService(getRepository<Message>(Message)),
+        new ChannelService(AppDataSource.getRepository<Channel>(Channel)),
+        new MessageService(AppDataSource.getRepository<Message>(Message)),
         new RedisService(redisClient),
-        new UserService(getRepository<User>(User))
+        new UserService(AppDataSource.getRepository<User>(User))
       ),
       new WorkspaceController(
         new RedisService(redisClient),
-        new UserService(getRepository<User>(User)),
-        new WorkspaceService(getRepository<Workspace>(Workspace))
+        new UserService(AppDataSource.getRepository<User>(User)),
+        new WorkspaceService(AppDataSource.getRepository<Workspace>(Workspace))
       ),
     ],
     redisClient

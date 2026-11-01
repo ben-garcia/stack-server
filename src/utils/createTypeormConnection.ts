@@ -1,22 +1,39 @@
-import {
-  createConnection,
-  ConnectionOptions,
-  getConnectionOptions,
-} from 'typeorm';
+import { DataSource, DataSourceOptions } from 'typeorm';
 
-export const createTypeormConnection = async () => {
+import { User, Channel, DirectMessage, Message, Workspace } from '../entity';
+
+const getDataSourceOptions = (): DataSourceOptions => {
   if (process.env.NODE_ENV === 'production') {
-    // setup the correct env variable
-    // that Heroku uses to the one that TypeORM uses
-    process.env.TYPEORM_URL = process.env.DATABASE_URL;
-    return createConnection();
+    return {
+      type: 'postgres',
+      url: process.env.DATABASE_URL,
+      ssl: {
+        rejectUnauthorized: false, // Heroku requirement
+      },
+      entities: [User, Channel, DirectMessage, Message, Workspace],
+      synchronize: false, // typically false in production
+    };
   }
 
-  // when not in production
-  const connectionOptions: ConnectionOptions = await getConnectionOptions(
-    process.env.NODE_ENV
-  );
-  return createConnection({ ...connectionOptions, name: 'default' });
+  return {
+    type: 'postgres',
+    host: 'localhost',
+    port: 5432,
+    username: 'postgres', // adjust to your local dev credentials
+    password: '',
+    database: 'stack_development',
+    entities: [User, Channel, DirectMessage, Message, Workspace],
+    synchronize: true,
+  };
+};
+
+export const AppDataSource = new DataSource(getDataSourceOptions());
+
+export const createTypeormConnection = async (): Promise<DataSource> => {
+  if (!AppDataSource.isInitialized) {
+    await AppDataSource.initialize();
+  }
+  return AppDataSource;
 };
 
 export default createTypeormConnection;

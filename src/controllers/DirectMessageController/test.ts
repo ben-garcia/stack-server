@@ -228,7 +228,7 @@ describe('DirectMessageController', () => {
         ...mockDirectMessage,
       };
 
-      delete mockReq.body.message.channel;
+      delete (mockReq as any).body.message.channel;
 
       directMessageController.userService.getById = jest
         .fn()

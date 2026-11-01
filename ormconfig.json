@@ -13,7 +13,6 @@
 		"host": "localhost",
 		"port": 5432,
 		"username": "ben",
-		"password": "ben",
 		"database": "stack_development",
 		"synchronize": true,
 		"logging": true,

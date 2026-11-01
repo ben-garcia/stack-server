@@ -1,13 +1,14 @@
 import { Request, Response, NextFunction } from 'express';
 import Redis from 'ioredis';
 
-let client: Redis.Redis;
+let client: Redis;
 
 if (process.env.REDIS_URL && process.env.NODE_ENV === 'production') {
   client = new Redis(process.env.REDIS_URL);
 } else {
+  // client = new Redis({ password: 'ben' });
   // use localhost in development
-  client = new Redis({ password: 'ben' });
+  client = new Redis();
 }
 /**
  * Checks if the request resource is stored in Redis
@@ -16,7 +17,7 @@ const checkRedis = (req: Request, res: Response, next: NextFunction) => {
   // requested resource
   const resourceName = req.baseUrl.split('/')[2];
   // having passed the userSession middleware
-  const { userId, username } = req.session!;
+  const { userId, username } = req.session as any;
   const { params } = req;
   const redisKey = `user:${userId}-${username}:${resourceName}`;
 

@@ -39,8 +39,8 @@ class ChannelService {
     this.channelRepository = channelRepository;
   }
 
-  async getById(channelId: number): Promise<Channel | undefined> {
-    return this.channelRepository.findOne(channelId);
+  async getById(channelId: number): Promise<Channel | null> {
+    return this.channelRepository.findOne({ where: { id: channelId } });
   }
 
   async getChannelsByIds(
@@ -52,7 +52,7 @@ class ChannelService {
     `);
   }
 
-  async getMembersByChannelId(channelId: number): Promise<Channel | undefined> {
+  async getMembersByChannelId(channelId: number): Promise<Channel | null> {
     return this.channelRepository.findOne({
       where: { id: channelId },
       relations: ['members'],

@@ -15,15 +15,15 @@ class UserService {
     this.userRepository = userRepository;
   }
 
-  async getByEmail(email: string): Promise<User | undefined> {
+  async getByEmail(email: string): Promise<User | null> {
     return this.userRepository.findOne({ where: { email } });
   }
 
-  async getById(id: number | string): Promise<User | undefined> {
-    return this.userRepository.findOne(id);
+  async getById(id: number): Promise<User | null> {
+    return this.userRepository.findOne({ where: { id } });
   }
 
-  async getByUsername(username: string): Promise<User | undefined> {
+  async getByUsername(username: string): Promise<User | null> {
     return this.userRepository.findOne({ where: { username } });
   }
 
