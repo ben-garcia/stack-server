@@ -153,6 +153,8 @@ class App {
 
   // add the middlewares for the application.
   private initializeMiddleware(): void {
+    const isProduction = process.env.NODE_ENV === 'production';
+
     this.app.use(express.json()); // parse application/json in req.body
     this.app.use(morgan('dev')); // logger
     this.app.use(helmet()); // sets up various HTTP headers for security
@@ -167,17 +169,16 @@ class App {
     this.app.use(
       session({
         cookie: {
-          domain:
-            process.env.NODE_ENV === 'production'
-              ? 'stackapplication.herokuapp.com'
-              : 'localhost',
+          domain: isProduction
+            ? 'stackapplication.herokuapp.com'
+            : 'localhost:3000',
           httpOnly: true, // default
           maxAge: 1000 * 60 * 60 * 24 * 30, // 1 month
-          partitioned: true,
+          partitioned: isProduction ? true : false,
           // send the cookie with every request to the api
           path: '/api',
-          sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-          secure: process.env.NODE_ENV === 'production', // set in production
+          sameSite: isProduction ? 'none' : 'lax',
+          secure: isProduction, // set in production
         },
         name: 'stackSessionId', // name for the session id cookie
         proxy: true, // save session cookie id to client in Heroku
